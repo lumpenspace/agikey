@@ -54,7 +54,11 @@ export async function detectAgy(customPath = null) {
       version: null,
       status: 'not_found',
       statusMessage: 'agy executable not found in PATH or ~/.local/bin',
-      models: [],
+      defaultModel: 'gemini-3.8-flash-high',
+      models: [
+        { id: 'gemini-3.8-flash-high', name: 'Gemini 3.8 Flash (High)', provider: 'agy' },
+        { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6 (Thinking)', provider: 'agy' },
+      ],
       capabilities: {
         streaming: true,
         jsonMode: true,
@@ -131,7 +135,11 @@ export async function detectClaude(customPath = null) {
       version: null,
       status: 'not_found',
       statusMessage: 'claude executable not found in PATH',
-      models: [],
+      defaultModel: 'claude-3-7-sonnet',
+      models: [
+        { id: 'claude-3-7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'claude' },
+        { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'claude' },
+      ],
       capabilities: {
         streaming: true,
         jsonMode: true,
@@ -198,7 +206,11 @@ export async function detectGrok(customPath = null) {
       version: null,
       status: 'not_found',
       statusMessage: 'grok executable not found in PATH',
-      models: [],
+      defaultModel: 'grok-4.6',
+      models: [
+        { id: 'grok-4.6', name: 'Grok 4.6', provider: 'grok' },
+        { id: 'grok-4.5', name: 'Grok 4.5', provider: 'grok' },
+      ],
       capabilities: {
         streaming: true,
         jsonMode: true,
@@ -281,7 +293,11 @@ export async function detectCodex(customPath = null) {
       version: null,
       status: 'not_found',
       statusMessage: 'codex or chatgpt executable not found in PATH',
-      models: [],
+      defaultModel: 'gpt-4o',
+      models: [
+        { id: 'gpt-4o', name: 'GPT-4o', provider: 'codex' },
+        { id: 'o3-mini', name: 'o3-mini', provider: 'codex' },
+      ],
       capabilities: {
         streaming: true,
         jsonMode: true,
@@ -417,10 +433,14 @@ export class Detector {
     return this.getAllProviders().filter(p => p.installed);
   }
 
-  getAvailableModels() {
+  getAvailableModels({ all = false } = {}) {
     const list = [];
-    for (const provider of this.providers.values()) {
-      if (!provider.installed) continue;
+    const providersToScan = Array.from(this.providers.values());
+    const anyInstalled = providersToScan.some(p => p.installed);
+    const filterInstalled = !all && anyInstalled;
+
+    for (const provider of providersToScan) {
+      if (filterInstalled && !provider.installed) continue;
       list.push({
         id: provider.id,
         object: 'model',
