@@ -10,7 +10,7 @@ import { loadDiscoveryCache, getCacheFilePath, clearDiscoveryCache } from '../sr
 
 function printHelp() {
   console.log(`
-\x1b[1m\x1b[36mAgikey\x1b[0m - OpenAI-compatible local API gateway for Claude Code, agy, Grok, and Codex/ChatGPT
+\x1b[1m\x1b[38;5;214m⚿ Agikey\x1b[0m - OpenAI-compatible local API gateway for Claude Code, agy, Grok, and Codex/ChatGPT
 
 \x1b[1mUSAGE\x1b[0m
   agikey [command] [options]
@@ -77,7 +77,7 @@ async function runCheck(asJson = false, forceRefresh = false) {
 async function runDiscover(options = {}) {
   if (!options.asJson) {
     console.log('\x1b[1m\x1b[36m=================================================================\x1b[0m');
-    console.log('\x1b[1m\x1b[36m         🔍 AGIKEY SYSTEM DISCOVERY & AGENT INSPECTION           \x1b[0m');
+    console.log('\x1b[1m\x1b[36m         ⚿ AGIKEY SYSTEM DISCOVERY & AGENT INSPECTION           \x1b[0m');
     console.log('\x1b[1m\x1b[36m=================================================================\x1b[0m\n');
   }
 
@@ -171,8 +171,8 @@ async function runChat(modelName, promptText) {
   const adapter = createAdapter(target.provider);
 
   console.log(`\x1b[90m[Using ${target.provider.name} | Model: ${target.model}]\x1b[0m`);
-  console.log(`\x1b[1mUser:\x1b[0m ${promptText}\n`);
-  process.stdout.write('\x1b[1mAssistant:\x1b[0m ');
+  console.log(`\x1b[1m\x1b[38;5;214m⚿ User:\x1b[0m ${promptText}\n`);
+  process.stdout.write('\x1b[1m\x1b[38;5;214m⚿ Assistant:\x1b[0m ');
 
   try {
     await adapter.execute({
