@@ -36,7 +36,6 @@
         <a href="#matrix">Matrix</a>
         <a href="#modes">Two Modes</a>
         <a href="#sdks">SDKs</a>
-        <a href="#cli">CLI</a>
         <a href="https://github.com/lumpenspace/agikey" target="_blank" rel="noopener">GitHub</a>
         <a href="https://www.npmjs.com/package/agikey" target="_blank" rel="noopener">npm</a>
       </nav>
@@ -52,29 +51,29 @@
     </div>
   </header>
 
-  <!-- Hero Section: Commands on Left, Interactive Terminal on Right -->
   <main class="main-wrap">
-    <section class="hero-module">
-      <div class="hero-left">
-        <div class="kicker">
-          <span class="kicker-dot"></span>
-          <span>UNIVERSAL OPENAI GATEWAY &bull; V1.0.0</span>
-        </div>
-        <h1 class="hero-headline">
-          Local AI Coding CLIs.<br>
-          <span class="amber-glow">Served as OpenAI.</span>
-        </h1>
-        <p class="hero-lead">
-          Auto-detects <strong>Claude Code</strong>, <strong>agy</strong>, <strong>Grok</strong>, and <strong>Codex / ChatGPT</strong>. Caches in <code>~/.agikey/discovery.json</code> and exposes unified <code>/v1/chat/completions</code> and <code>/v1/completions</code> with native SSE streaming.
-        </p>
+    <!-- Title and briefer description on top -->
+    <header class="hero-top">
+      <div class="kicker">
+        <span class="kicker-dot"></span>
+        <span>UNIVERSAL OPENAI GATEWAY &bull; V1.0.0</span>
+      </div>
+      <h1 class="hero-headline">
+        Local AI Coding CLIs. <span class="amber-glow">Served as OpenAI.</span>
+      </h1>
+      <p class="hero-lead-brief">
+        One local gateway for <strong>Claude Code</strong>, <strong>agy</strong>, <strong>Grok</strong>, and <strong>Codex / ChatGPT</strong> — with real-time SSE streaming and persistent multi-turn conversations.
+      </p>
+      <div class="quick-install">
+        <span class="sym">⚿</span>
+        <code id="cmd-install">npm i -g agikey && agikey discover</code>
+        <button class="btn-copy" data-copy="npm i -g agikey && agikey discover">COPY</button>
+      </div>
+    </header>
 
-        <div class="quick-install">
-          <span class="sym">⚿</span>
-          <code id="cmd-install">npm i -g agikey && agikey discover</code>
-          <button class="btn-copy" data-copy="npm i -g agikey && agikey discover">COPY</button>
-        </div>
-
-        <!-- Numbered Command Selector (Interacts with Terminal) -->
+    <!-- Commands and Terminal on the SAME LINE -->
+    <section class="hero-stage">
+      <div class="stage-commands">
         <div class="commands-label">
           <span>INTERACTIVE COMMAND SUITE</span>
           <span class="hint-label">CLICK ANY TO RUN IN TERMINAL &rarr;</span>
@@ -83,7 +82,7 @@
           <li class="active" data-demo="discover">
             <div>
               <b>agikey discover</b>
-              <span>Deep inspection of all installed CLIs, capabilities & models. Caches instantly.</span>
+              <span>Deep inspection of installed CLIs, capabilities & models. Caches instantly.</span>
               <span class="hint">probes ~/.local/bin, PATH, nvm &bull; writes ~/.agikey/discovery.json</span>
             </div>
           </li>
@@ -92,6 +91,13 @@
               <b>agikey serve --port 8000</b>
               <span>Launches local OpenAI gateway & interactive browser UI dashboard.</span>
               <span class="hint">instant ~20ms boot from cache &bull; binds http://127.0.0.1:8000/v1</span>
+            </div>
+          </li>
+          <li data-demo="convs">
+            <div>
+              <b>agikey conversations</b>
+              <span>Persistent multi-turn session threads stored on disk.</span>
+              <span class="hint">cross-agent conversation state &bull; /v1/conversations</span>
             </div>
           </li>
           <li data-demo="stream">
@@ -118,8 +124,8 @@
         </ol>
       </div>
 
-      <!-- Right Column: Interactive Terminal Box -->
-      <div class="hero-right">
+      <!-- Right Column: Interactive Terminal Box on the same line -->
+      <div class="stage-terminal">
         <div class="terminal-frame">
           <div class="terminal-bar">
             <div class="dots">
@@ -172,16 +178,9 @@
             <tr>
               <td>
                 <div class="agent-brand">
-                  <div class="llm-logo gemini">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z" fill="url(#gem-grad)"/>
-                      <defs>
-                        <linearGradient id="gem-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-                          <stop stop-color="#4E8CFF"/>
-                          <stop offset="0.5" stop-color="#B77BFF"/>
-                          <stop offset="1" stop-color="#FF6B99"/>
-                        </linearGradient>
-                      </defs>
+                  <div class="llm-logo agy" style="background: rgba(122, 162, 255, 0.12); border-color: rgba(122, 162, 255, 0.3);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#7aa2ff">
+                      <path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/>
                     </svg>
                   </div>
                   <div>
@@ -204,9 +203,9 @@
             <tr>
               <td>
                 <div class="agent-brand">
-                  <div class="llm-logo claude">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#D97757">
-                      <path d="M12 2.5a1.2 1.2 0 0 1 1.15.86l1.37 4.8 4.8-1.37a1.2 1.2 0 0 1 1.49 1.49l-1.37 4.8 4.8 1.37a1.2 1.2 0 0 1 0 2.3l-4.8 1.37 1.37 4.8a1.2 1.2 0 0 1-1.49 1.49l-4.8-1.37-1.37 4.8a1.2 1.2 0 0 1-2.3 0l-1.37-4.8-4.8 1.37a1.2 1.2 0 0 1-1.49-1.49l1.37-4.8-4.8-1.37a1.2 1.2 0 0 1 0-2.3l4.8-1.37-1.37-4.8a1.2 1.2 0 0 1 1.49-1.49l4.8 1.37 1.37-4.8A1.2 1.2 0 0 1 12 2.5z"/>
+                  <div class="llm-logo claude" style="background: rgba(217, 119, 87, 0.12); border-color: rgba(217, 119, 87, 0.3);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#d97757">
+                      <path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/>
                     </svg>
                   </div>
                   <div>
@@ -229,9 +228,9 @@
             <tr>
               <td>
                 <div class="agent-brand">
-                  <div class="llm-logo grok">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  <div class="llm-logo grok" style="background: rgba(184, 188, 196, 0.12); border-color: rgba(184, 188, 196, 0.3);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#b8bcc4">
+                      <path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/>
                     </svg>
                   </div>
                   <div>
@@ -254,9 +253,9 @@
             <tr>
               <td>
                 <div class="agent-brand">
-                  <div class="llm-logo codex">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#10A37F">
-                      <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.08 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.493zm-9.66-4.665a4.474 4.474 0 0 1-.534-3.012l.142.085 4.783 2.759a.77.77 0 0 0 .78 0l5.842-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.49a4.5 4.5 0 0 1-6.14-1.725zM2.34 8.946a4.47 4.47 0 0 1 2.346-2.024v5.676a.79.79 0 0 0 .393.681l5.842 3.37-2.02 1.168a.078.078 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 8.946zm16.597 3.855l-5.843-3.37 2.02-1.168a.078.078 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.402-.68zM20.177 6.47a4.476 4.476 0 0 1 .535 3.013l-.142-.085-4.783-2.759a.77.77 0 0 0-.78 0l-5.842 3.37V7.676a.08.08 0 0 1 .033-.062l4.84-2.798a4.5 4.5 0 0 1 6.14 1.725zM12 13.578l-2.484-1.434 2.484-1.434 2.484 1.434L12 13.578z"/>
+                  <div class="llm-logo codex" style="background: rgba(16, 163, 127, 0.12); border-color: rgba(16, 163, 127, 0.3);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#10a37f">
+                      <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654 2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
                     </svg>
                   </div>
                   <div>
@@ -343,6 +342,7 @@
         <div class="snippet-nav">
           <button class="s-tab active" data-tab="py">Python (openai)</button>
           <button class="s-tab" data-tab="ts">Node.js / TypeScript</button>
+          <button class="s-tab" data-tab="convs">Conversations API</button>
           <button class="s-tab" data-tab="curl">cURL (SSE Stream)</button>
           <button class="s-tab" data-tab="ide">Cursor & Continue</button>
         </div>
@@ -399,6 +399,26 @@ for await (const chunk of stream) {
 }</code></pre>
         </div>
 
+        <div class="s-pane" id="pane-convs">
+          <div class="pane-top">
+            <span>conversations.sh</span>
+            <button class="copy-btn" data-copy-id="code-convs">COPY</button>
+          </div>
+          <pre><code id="code-convs"># 1. Continue persistent thread via OpenAI completions
+curl -N http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy",
+    "conversation_id": "conv-a1b2c3d4",
+    "messages": [{"role": "user", "content": "Follow-up question"}],
+    "stream": true
+  }'
+
+# 2. Or resume directly via Agikey CLI:
+agikey chat -c conv-a1b2c3d4 "Continue debugging"
+agikey convs</code></pre>
+        </div>
+
         <div class="s-pane" id="pane-curl">
           <div class="pane-top">
             <span>terminal</span>
@@ -430,42 +450,6 @@ curl -N http://127.0.0.1:8000/v1/chat/completions \
     }
   ]
 }</code></pre>
-        </div>
-      </div>
-    </section>
-
-    <!-- CLI Command Guide -->
-    <section id="cli" class="content-section">
-      <div class="section-title">
-        <span class="sec-badge">⚿ COMMAND LINE REFERENCE</span>
-        <h2>Simple, Powerful CLI</h2>
-        <p>A single portable tool with zero external dependencies</p>
-      </div>
-
-      <div class="cli-list">
-        <div class="cli-item">
-          <div class="cli-cmd"><code>agikey discover</code></div>
-          <div class="cli-desc">Performs deep system discovery for Claude Code, agy, Grok, and Codex. Probes versions, flags, models, and saves configuration to <code>~/.agikey/discovery.json</code>. Add <code>--json</code> for machine output.</div>
-        </div>
-        <div class="cli-item">
-          <div class="cli-cmd"><code>agikey serve</code></div>
-          <div class="cli-desc">Starts the local OpenAI HTTP gateway and interactive web dashboard at <code>http://127.0.0.1:8000</code>. Loads from cache in ~20ms. Flags: <code>-p, --port</code>, <code>-h, --host</code>, <code>-k, --key</code>.</div>
-        </div>
-        <div class="cli-item">
-          <div class="cli-cmd"><code>agikey check</code></div>
-          <div class="cli-desc">Prints a clean ASCII diagnostic status report of all 4 agents in your terminal. Use <code>--refresh</code> to bypass cache.</div>
-        </div>
-        <div class="cli-item">
-          <div class="cli-cmd"><code>agikey models</code></div>
-          <div class="cli-desc">Lists all available OpenAI model IDs mapped across all discovered local CLI tools.</div>
-        </div>
-        <div class="cli-item">
-          <div class="cli-cmd"><code>agikey chat "&lt;prompt&gt;"</code></div>
-          <div class="cli-desc">Sends a prompt directly through the CLI with live token streaming to stdout. Example: <code>agikey chat -m agy "Write quicksort"</code>.</div>
-        </div>
-        <div class="cli-item">
-          <div class="cli-cmd"><code>agikey clear-cache</code></div>
-          <div class="cli-desc">Removes the local discovery cache file from <code>~/.agikey/discovery.json</code>.</div>
         </div>
       </div>
     </section>

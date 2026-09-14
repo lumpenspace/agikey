@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agikey — OpenAI Local Gateway</title>
+  <title>⚿ Agikey — OpenAI-Compatible Local API Gateway</title>
+  <meta name="description" content="Agikey: OpenAI-Compatible Local API Gateway for AI coding CLIs">
   <meta name="color-scheme" content="light dark">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Michroma&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>
     {
       const colorScheme = localStorage.getItem("color-scheme");
@@ -17,18 +21,24 @@
 </head>
 <body>
   <div class="app-container">
-    <!-- Header -->
+    <!-- Header (Constellation Navigation matching website) -->
     <header class="app-header">
       <div class="header-left">
-        <div class="brand-logo">
-          <span class="brand-sym">⚿</span>
-        </div>
-        <div>
-          <h1 class="brand-title">Agikey</h1>
-          <p class="brand-subtitle">OpenAI-Compatible Local API Gateway for AI Coding CLIs</p>
-        </div>
+        <a href="/" class="brand-link">
+          <span class="project-square project-agikey project-current" aria-hidden="true">⚿</span>
+          <div>
+            <h1 class="brand-title">AGIKEY</h1>
+            <p class="brand-subtitle">“Local AI Coding CLIs. Served as OpenAI.”</p>
+          </div>
+        </a>
       </div>
       <div class="header-right">
+        <nav class="constellation-nav" aria-label="Other Hyperplex projects">
+          <a class="project-square project-hyperplex" href="https://hyperplex.org" aria-label="Hyperplex" title="Hyperplex" target="_blank" rel="noopener"><span aria-hidden="true">⟡</span></a>
+          <a class="project-square project-ariadne" href="https://ariadne.hyperplex.org" aria-label="Ariadne" title="Ariadne" target="_blank" rel="noopener"><span aria-hidden="true">⌇</span></a>
+          <a class="project-square project-raft" href="https://github.com/lumpenspace/raft" aria-label="Raft" title="Raft" target="_blank" rel="noopener"><span aria-hidden="true">≋</span></a>
+          <a class="project-square project-opbdh" href="https://opbdh.hyperplex.org" aria-label="OPBDH" title="OPBDH" target="_blank" rel="noopener"><span aria-hidden="true">◉</span></a>
+        </nav>
         <div class="endpoint-badge" title="Local OpenAI endpoint base URL">
           <span class="status-dot online"></span>
           <code>http://127.0.0.1:8000/v1</code>
@@ -46,7 +56,9 @@
     <nav class="nav-tabs">
       <button class="nav-tab active" data-tab="providers">Agent Status</button>
       <button class="nav-tab" data-tab="playground">Interactive Playground</button>
-      <button class="nav-tab" data-tab="conversations">Conversations</button>
+      <button class="nav-tab" data-tab="conversations">
+        Conversation Threads <span id="nav-conv-badge" class="badge-amber-pill">0</span>
+      </button>
       <button class="nav-tab" data-tab="docs">Connect & SDKs</button>
       <button class="nav-tab" data-tab="logs">Live Request Logs</button>
     </nav>
@@ -108,8 +120,22 @@
               <label for="api-mode-select">API Mode</label>
               <select id="api-mode-select" class="form-control">
                 <option value="chat">Chat Completions (/v1/chat/completions)</option>
+                <option value="conversation" selected>Conversation Mode (/v1/conversations)</option>
                 <option value="text">Text Completions (/v1/completions)</option>
               </select>
+            </div>
+
+            <div class="form-group" id="conv-session-group">
+              <label for="conv-session-select">
+                <span>Active Conversation Thread</span>
+                <small id="conv-turns-count" class="text-muted" style="font-family: var(--font-mono);"></small>
+              </label>
+              <div style="display: flex; gap: 6px;">
+                <select id="conv-session-select" class="form-control" style="flex: 1;">
+                  <option value="">(New Conversation Thread)</option>
+                </select>
+                <button type="button" id="new-conv-btn" class="btn secondary" title="Start new conversation" style="padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;">+ New</button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -118,16 +144,6 @@
                 <!-- Dynamically populated -->
                 <option value="agy">agy (Default)</option>
               </select>
-            </div>
-
-            <div class="form-group">
-              <label for="conv-session-select">Session Thread</label>
-              <div style="display: flex; gap: 6px;">
-                <select id="conv-session-select" class="form-control" style="flex: 1;">
-                  <option value="">(New ephemeral session)</option>
-                </select>
-                <button type="button" id="new-conv-btn" class="btn secondary" title="Start new conversation" style="padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;">+ New</button>
-              </div>
             </div>
 
             <div class="form-group toggle-group">

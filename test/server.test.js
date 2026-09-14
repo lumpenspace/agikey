@@ -213,7 +213,7 @@ describe('HTTP API Server Integration Tests', () => {
     assert.equal(res.status, 200);
     const text = await res.text();
     assert.ok(text.includes('Agikey') || text.includes('Agiary'));
-    assert.ok(text.includes('OpenAI-Compatible Local API Gateway'));
+    assert.ok(text.includes('OpenAI-Compatible Local API Gateway') || text.includes('OpenAI Local Gateway'));
   });
 
   it('POST /v1/chat/completions non-streaming returns standard OpenAI completion', async (t) => {

@@ -82,10 +82,10 @@ async function loadStatus() {
 }
 
 const LOGOS = {
-  agy: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z" fill="url(#gem-grad-app)"/><defs><linearGradient id="gem-grad-app" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#4E8CFF"/><stop offset="0.5" stop-color="#B77BFF"/><stop offset="1" stop-color="#FF6B99"/></linearGradient></defs></svg>`,
-  claude: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#D97757"><path d="M12 2.5a1.2 1.2 0 0 1 1.15.86l1.37 4.8 4.8-1.37a1.2 1.2 0 0 1 1.49 1.49l-1.37 4.8 4.8 1.37a1.2 1.2 0 0 1 0 2.3l-4.8 1.37 1.37 4.8a1.2 1.2 0 0 1-1.49 1.49l-4.8-1.37-1.37 4.8a1.2 1.2 0 0 1-2.3 0l-1.37-4.8-4.8 1.37a1.2 1.2 0 0 1-1.49-1.49l1.37-4.8-4.8-1.37a1.2 1.2 0 0 1 0-2.3l4.8-1.37-1.37-4.8a1.2 1.2 0 0 1 1.49-1.49l4.8 1.37 1.37-4.8A1.2 1.2 0 0 1 12 2.5z"/></svg>`,
-  grok: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
-  codex: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#10A37F"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.08 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.493zm-9.66-4.665a4.474 4.474 0 0 1-.534-3.012l.142.085 4.783 2.759a.77.77 0 0 0 .78 0l5.842-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.49a4.5 4.5 0 0 1-6.14-1.725zM2.34 8.946a4.47 4.47 0 0 1 2.346-2.024v5.676a.79.79 0 0 0 .393.681l5.842 3.37-2.02 1.168a.078.078 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 8.946zm16.597 3.855l-5.843-3.37 2.02-1.168a.078.078 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.402-.68zM20.177 6.47a4.476 4.476 0 0 1 .535 3.013l-.142-.085-4.783-2.759a.77.77 0 0 0-.78 0l-5.842 3.37V7.676a.08.08 0 0 1 .033-.062l4.84-2.798a4.5 4.5 0 0 1 6.14 1.725zM12 13.578l-2.484-1.434 2.484-1.434 2.484 1.434L12 13.578z"/></svg>`
+  agy: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#7aa2ff"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58q-1.62-1.62-2.55-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81-1.62 1.65-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>`,
+  claude: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#d97757"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24zm-6.9372 0H6.7725L0 20.459h3.6934l1.458-3.793h6.9934l1.4367 3.793h3.7147zm-1.0772 10.373H6.3887l2.8805-7.502z"/></svg>`,
+  grok: `<svg width="20" height="20" viewBox="0 0 24 24" fill="#b8bcc4"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.213 13.408L.258 24H2.33l8.058-9.366L16.749 24h6.993zm-2.838 3.298-.929-1.328-7.4-10.584h3.182l5.974 8.544.929 1.328 7.761 11.1h-3.182z"/></svg>`,
+  codex: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#10a37f"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9897 5.9897 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1683a.071.071 0 0 1 .038.052v5.5826a4.5045 4.5045 0 0 1-4.4945 4.4947zm-9.66-4.6654a4.4744 4.4744 0 0 1-.5346-3.0118l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.49a4.5 4.5 0 0 1-6.14-1.7262zm-1.26-9.8177a4.47 4.47 0 0 1 2.346-2.024v5.676a.79.79 0 0 0 .393.681l5.8428 3.37-2.02 1.168a.078.078 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.946zm16.597 3.855-5.843-3.37 2.02-1.168a.078.078 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.402-.68zm1.24-4.805a4.476 4.476 0 0 1 .535 3.013l-.142-.085-4.783-2.759a.77.77 0 0 0-.78 0l-5.842 3.37V7.676a.08.08 0 0 1 .033-.062l4.84-2.798a4.5 4.5 0 0 1 6.14 1.725zM12 13.578 9.516 12.144l2.484-1.434 2.484 1.434L12 13.578z"/></svg>`
 };
 
 function renderProviders(providers) {
@@ -251,11 +251,38 @@ streamToggle.addEventListener('change', () => {
   streamIndicator.className = streamToggle.checked ? 'badge badge-info' : 'badge badge-warning';
 });
 
-apiModeSelect.addEventListener('change', () => {
-  const isChat = apiModeSelect.value === 'chat';
-  document.getElementById('playground-mode-title').textContent = isChat ? 'Chat Conversation' : 'Text Completion';
-  document.getElementById('system-prompt-group').style.display = isChat ? 'flex' : 'none';
-});
+apiModeSelect.addEventListener('change', updateApiModeUI);
+
+function updateApiModeUI() {
+  const mode = apiModeSelect.value;
+  const convGroup = document.getElementById('conv-session-group');
+  const titleEl = document.getElementById('playground-mode-title');
+  const sysGroup = document.getElementById('system-prompt-group');
+
+  if (mode === 'conversation') {
+    if (convGroup) {
+      convGroup.style.display = 'flex';
+      convGroup.classList.add('active-mode');
+    }
+    if (titleEl) titleEl.textContent = '⚿ Conversation Mode';
+    if (sysGroup) sysGroup.style.display = 'flex';
+  } else if (mode === 'chat') {
+    if (convGroup) {
+      convGroup.style.display = 'flex';
+      convGroup.classList.remove('active-mode');
+    }
+    if (titleEl) titleEl.textContent = 'Chat Completions (/v1/chat/completions)';
+    if (sysGroup) sysGroup.style.display = 'flex';
+  } else {
+    // text
+    if (convGroup) {
+      convGroup.style.display = 'none';
+      convGroup.classList.remove('active-mode');
+    }
+    if (titleEl) titleEl.textContent = 'Text Completions (/v1/completions)';
+    if (sysGroup) sysGroup.style.display = 'none';
+  }
+}
 
 clearChatBtn.addEventListener('click', () => {
   chatHistory.innerHTML = `
@@ -290,7 +317,7 @@ async function sendMessage() {
   appendMessage('user', text);
   promptInput.value = '';
 
-  const isChat = apiModeSelect.value === 'chat';
+  const mode = apiModeSelect.value;
   const isStream = streamToggle.checked;
   const model = modelSelect.value || 'agy';
   const reasoning = reasoningSelect.value || null;
@@ -311,8 +338,56 @@ async function sendMessage() {
   const startTime = Date.now();
 
   try {
-    if (isChat) {
-      // Build messages array
+    if (mode === 'conversation') {
+      let convId = convSessionSelect ? convSessionSelect.value : null;
+
+      // Auto-create thread if none selected
+      if (!convId) {
+        const titleSnippet = text.length > 36 ? text.slice(0, 36) + '...' : text;
+        const createRes = await fetch('/v1/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: titleSnippet,
+            model: model,
+          }),
+        });
+        if (!createRes.ok) {
+          const err = await createRes.json().catch(() => ({}));
+          throw new Error(err.error?.message || `Failed creating conversation: HTTP ${createRes.status}`);
+        }
+        const newConv = await createRes.json();
+        convId = newConv.id;
+
+        // Add to dropdown and select
+        if (convSessionSelect) {
+          const opt = document.createElement('option');
+          opt.value = convId;
+          opt.textContent = `${newConv.title} (${convId.slice(0, 10)})`;
+          convSessionSelect.appendChild(opt);
+          convSessionSelect.value = convId;
+        }
+      }
+
+      const endpoint = `/v1/conversations/${encodeURIComponent(convId)}/messages`;
+      const payload = {
+        role: 'user',
+        content: text,
+        stream: isStream,
+        model,
+        temperature,
+        ...(maxTokens && { max_tokens: maxTokens }),
+        ...(reasoning && { reasoning_effort: reasoning }),
+      };
+
+      if (isStream) {
+        await handleStreamingResponse(endpoint, payload, contentEl, cursor, startTime);
+      } else {
+        await handleSyncChatResponse(endpoint, payload, contentEl, cursor, startTime);
+      }
+
+    } else if (mode === 'chat') {
+      // Chat Completions (/v1/chat/completions)
       const messages = [];
       if (systemPrompt) {
         messages.push({ role: 'system', content: systemPrompt });
@@ -414,7 +489,7 @@ async function handleStreamingResponse(endpoint, payload, contentEl, cursor, sta
           if (parsed.error) {
             throw new Error(parsed.error.message);
           }
-          const delta = parsed.choices?.[0]?.delta?.content || '';
+          const delta = parsed.choices?.[0]?.delta?.content || parsed.delta?.content || '';
           if (delta) {
             accumulated += delta;
             contentEl.textContent = accumulated;
@@ -436,7 +511,7 @@ async function handleStreamingResponse(endpoint, payload, contentEl, cursor, sta
 
   const duration = Date.now() - startTime;
   metricLatency.textContent = duration;
-  metricPromptTokens.textContent = promptTokens || Math.ceil(payload.messages.length * 8);
+  metricPromptTokens.textContent = promptTokens || Math.ceil((payload.messages?.length || 1) * 8);
   metricCompTokens.textContent = compTokens || Math.ceil(accumulated.length / 4);
 }
 
@@ -454,7 +529,7 @@ async function handleSyncChatResponse(endpoint, payload, contentEl, cursor, star
     throw new Error(json.error?.message || `HTTP ${res.status}: ${res.statusText}`);
   }
 
-  const content = json.choices?.[0]?.message?.content || '';
+  const content = json.content || json.choices?.[0]?.message?.content || '';
   cursor.remove();
   contentEl.textContent = content;
 
@@ -616,15 +691,38 @@ async function loadConversations() {
     const convs = data.data || [];
     renderConversationsTable(convs);
     renderConversationsDropdown(convs);
+
+    // Update nav counter badge
+    const badge = document.getElementById('nav-conv-badge');
+    if (badge) badge.textContent = convs.length;
+
+    // Update active turns count
+    updateTurnsCount(convs);
   } catch (err) {
     console.error('Failed to load conversations:', err);
+  }
+}
+
+function updateTurnsCount(convs) {
+  const countEl = document.getElementById('conv-turns-count');
+  if (!countEl) return;
+  const currentId = convSessionSelect?.value;
+  if (!currentId) {
+    countEl.textContent = '';
+    return;
+  }
+  const found = (convs || []).find(c => c.id === currentId);
+  if (found) {
+    countEl.textContent = `(${found.message_count || 0} turns)`;
+  } else {
+    countEl.textContent = '';
   }
 }
 
 function renderConversationsDropdown(convs) {
   if (!convSessionSelect) return;
   const currentVal = convSessionSelect.value;
-  convSessionSelect.innerHTML = '<option value="">(New ephemeral session)</option>';
+  convSessionSelect.innerHTML = '<option value="">(New Conversation Thread)</option>';
 
   convs.forEach(c => {
     const opt = document.createElement('option');
@@ -691,6 +789,12 @@ async function resumeConversationInPlayground(convId) {
     if (playTabBtn) playTabBtn.classList.add('active');
     if (playContent) playContent.classList.add('active');
 
+    // Switch API mode to conversation mode
+    if (apiModeSelect) {
+      apiModeSelect.value = 'conversation';
+      updateApiModeUI();
+    }
+
     // Update session select
     if (convSessionSelect) {
       if (!Array.from(convSessionSelect.options).some(o => o.value === convId)) {
@@ -700,6 +804,11 @@ async function resumeConversationInPlayground(convId) {
         convSessionSelect.appendChild(opt);
       }
       convSessionSelect.value = convId;
+    }
+
+    const turnsCountEl = document.getElementById('conv-turns-count');
+    if (turnsCountEl) {
+      turnsCountEl.textContent = `(${conv.messages ? conv.messages.length : 0} turns)`;
     }
 
     // Set model if valid
@@ -719,7 +828,7 @@ async function resumeConversationInPlayground(convId) {
       chatHistory.innerHTML = `
         <div class="chat-placeholder">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <p>Conversation <code>${convId}</code> loaded with 0 messages. Type below to begin!</p>
+          <p>Conversation <code>${convId}</code> loaded. Type below to continue this thread!</p>
         </div>
       `;
     }
@@ -748,10 +857,16 @@ async function handleDeleteConversation(convId) {
 
 function startNewConversation() {
   if (convSessionSelect) convSessionSelect.value = '';
+  const turnsCountEl = document.getElementById('conv-turns-count');
+  if (turnsCountEl) turnsCountEl.textContent = '';
+  if (apiModeSelect) {
+    apiModeSelect.value = 'conversation';
+    updateApiModeUI();
+  }
   chatHistory.innerHTML = `
     <div class="chat-placeholder">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <p>Send a message below to test your local AI CLI endpoints through standard OpenAI API formatting.</p>
+      <p>Starting a new conversation thread. Type below to begin!</p>
     </div>
   `;
   if (promptInput) promptInput.focus();
@@ -783,6 +898,7 @@ newConvTabBtn?.addEventListener('click', () => {
 refreshConvsBtn?.addEventListener('click', loadConversations);
 
 // Initialize on page load
+updateApiModeUI();
 loadStatus();
 loadConversations();
 

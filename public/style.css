@@ -1,6 +1,7 @@
 :root {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  --font-display: 'Michroma', sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
 
   /* Theme tokens */
   --bg-page: #f8fafc;
@@ -11,7 +12,7 @@
   --text-muted: #64748b;
   --border-color: #e2e8f0;
   --brand-primary: #ffaa00;
-  --brand-primary-hover: #b37400;
+  --brand-primary-hover: #e69900;
   --brand-success: #10b981;
   --brand-warning: #f59e0b;
   --brand-danger: #ef4444;
@@ -23,20 +24,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-page: #0b0f17;
-    --bg-card: #151c28;
-    --bg-subtle: #1e2738;
-    --bg-input: #121824;
-    --text-main: #f1f5f9;
-    --text-muted: #94a3b8;
-    --border-color: #263248;
+    --bg-page: #060608;
+    --bg-card: #0c0c11;
+    --bg-subtle: #121218;
+    --bg-input: #08080c;
+    --text-main: #f2f2f5;
+    --text-muted: #848496;
+    --border-color: #1c1c24;
     --brand-primary: #ffaa00;
     --brand-primary-hover: #ffbb33;
     --brand-success: #10b981;
     --brand-warning: #f59e0b;
     --brand-danger: #f87171;
-    --code-bg: #0d1117;
-    --code-text: #f0f6fc;
+    --code-bg: #09090d;
+    --code-text: #e6e6ec;
   }
 }
 
@@ -55,13 +56,13 @@
 }
 
 :root[data-theme="dark"] {
-  --bg-page: #0b0f17;
-  --bg-card: #151c28;
-  --bg-subtle: #1e2738;
-  --bg-input: #121824;
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --border-color: #263248;
+  --bg-page: #060608;
+  --bg-card: #0c0c11;
+  --bg-subtle: #121218;
+  --bg-input: #08080c;
+  --text-main: #f2f2f5;
+  --text-muted: #848496;
+  --border-color: #1c1c24;
   --brand-primary: #ffaa00;
   --brand-primary-hover: #ffbb33;
   color-scheme: dark;
@@ -82,7 +83,7 @@ body {
 }
 
 .app-container {
-  max-width: 1300px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 24px;
   min-height: 100vh;
@@ -106,32 +107,148 @@ body {
   gap: 14px;
 }
 
-.brand-logo {
+.brand-link {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand-primary), #8b5cf6);
-  color: white;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.brand-link:hover {
+  text-decoration: none;
 }
 
 .brand-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  color: var(--text-main);
+  line-height: 1.2;
 }
 
 .brand-subtitle {
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+}
+
+/* Constellation Nav (opbdh / hyperplex ecosystem) */
+.constellation-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.project-square {
+  --square-bg: #fff;
+  --square-ink: #060608;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border: 0;
+  background: var(--square-bg);
+  color: var(--square-ink);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  line-height: 1;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease,
+    transform .16s ease, box-shadow .16s ease;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.constellation-nav .project-square {
+  --square-bg: rgba(255, 170, 0, .14);
+  --square-ink: rgba(255, 255, 255, .55);
+  --active-bg: #ffaa00;
+  --active-ink: #060608;
+  --active-border: #ffd27f;
+  --active-glow: rgba(255, 170, 0, .55);
+  position: relative;
+  border: 1px solid rgba(255, 170, 0, .2);
+}
+
+.constellation-nav .project-square:hover,
+.constellation-nav .project-square:focus-visible {
+  --square-bg: var(--active-bg);
+  --square-ink: var(--active-ink);
+  border-color: var(--active-border);
+  color: var(--square-ink);
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px var(--active-glow);
+}
+
+.constellation-nav .project-square::after {
+  content: attr(aria-label);
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  z-index: 70;
+  padding: 4px 7px;
+  border: 1px solid var(--active-bg);
+  border-radius: 4px;
+  background: #0a0a0e;
+  color: #f2f2f5;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 1.2;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -3px);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+}
+
+.constellation-nav .project-square:hover::after,
+.constellation-nav .project-square:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.project-square:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.project-square[aria-current="page"], .project-current {
+  flex: none;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.project-agikey { --square-bg: #ffaa00; --square-ink: #060608; }
+
+.constellation-nav .project-hyperplex {
+  --active-bg: #4d7cff;
+  --active-ink: #fff;
+  --active-border: #91aaff;
+  --active-glow: rgba(77, 124, 255, .58);
+}
+.constellation-nav .project-ariadne {
+  --active-bg: #fbbf24;
+  --active-ink: #060608;
+  --active-border: #ffe08a;
+  --active-glow: rgba(251, 191, 36, .55);
+}
+.constellation-nav .project-raft {
+  --active-bg: #67dfc2;
+  --active-ink: #060608;
+  --active-border: #b6f3e4;
+  --active-glow: rgba(103, 223, 194, .55);
+}
+.constellation-nav .project-opbdh {
+  --active-bg: #ef4444;
+  --active-ink: #fff;
+  --active-border: #ff8a80;
+  --active-glow: rgba(239, 68, 68, .58);
 }
 
 .endpoint-badge {
@@ -350,6 +467,31 @@ body {
 .badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--brand-warning); }
 .badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--brand-danger); }
 .badge-info { background: rgba(59, 130, 246, 0.15); color: var(--brand-primary); }
+.badge-amber-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 7px;
+  background: rgba(255, 170, 0, 0.16);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+#conv-session-group {
+  transition: all 0.2s ease;
+}
+
+#conv-session-group.active-mode {
+  background: rgba(255, 170, 0, 0.05);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+}
 
 .provider-details {
   display: flex;

@@ -32,6 +32,21 @@ const DEMOS = {
       { type: 'dim', text: 'Ready for incoming HTTP & SSE streaming connections...' }
     ]
   },
+  convs: {
+    title: '⚿ agikey conversations',
+    lines: [
+      { type: 'cmd', text: 'agikey conversations' },
+      { type: 'amber', text: '⚿ Saved Conversations:' },
+      { type: 'dim', text: '┌──────────────────────────┬──────────────────────────────┬─────────────┬──────────┐' },
+      { type: 'dim', text: '│ Conversation ID          │ Title                        │ Model       │ Messages │' },
+      { type: 'dim', text: '├──────────────────────────┼──────────────────────────────┼─────────────┼──────────┤' },
+      { type: 'cyan', text: '│ conv-a1b2c3d4            │ Fix race condition in pool   │ agy         │    8     │' },
+      { type: 'cyan', text: '│ conv-7e8f9a0b            │ Write AST transformer        │ claude      │   14     │' },
+      { type: 'dim', text: '└──────────────────────────┴──────────────────────────────┴─────────────┴──────────┘' },
+      { type: 'ok',  text: '✓ Cross-agent session persistence stored under ~/.agikey/conversations/' },
+      { type: 'purple', text: 'Resume anytime: agikey chat -c conv-a1b2c3d4 "Continue refactoring"' }
+    ]
+  },
   stream: {
     title: '⚿ POST /v1/chat/completions (Stream)',
     lines: [
