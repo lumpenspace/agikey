@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agikey — OpenAI Local Gateway</title>
+  <meta name="color-scheme" content="light dark">
+  <script>
+    {
+      const colorScheme = localStorage.getItem("color-scheme");
+      if (colorScheme) {
+        document.querySelector('meta[name="color-scheme"]').content = colorScheme;
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Agikey</h1>
+          <p class="brand-subtitle">OpenAI-Compatible Local API Gateway for AI Coding CLIs</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="endpoint-badge" title="Local OpenAI endpoint base URL">
+          <span class="status-dot online"></span>
+          <code>http://127.0.0.1:8000/v1</code>
+          <button class="icon-btn" id="copy-endpoint-btn" title="Copy endpoint URL">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <button id="theme-toggle" class="btn secondary theme-btn" aria-label="Toggle theme">
+          <span class="theme-icon">🌓</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="providers">Agent Status</button>
+      <button class="nav-tab" data-tab="playground">Interactive Playground</button>
+      <button class="nav-tab" data-tab="docs">Connect & SDKs</button>
+      <button class="nav-tab" data-tab="logs">Live Request Logs</button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- Tab 1: Providers Status -->
+      <section id="tab-providers" class="tab-content active">
+        <div class="section-header">
+          <div>
+            <h2>Detected CLI Agents</h2>
+            <p class="text-muted">Local AI coding tools detected on your machine</p>
+          </div>
+          <button id="refresh-providers-btn" class="btn secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Re-scan System
+          </button>
+        </div>
+
+        <div class="providers-grid" id="providers-grid">
+          <!-- Populated by JavaScript -->
+          <div class="card skeleton-card">Scanning system for CLIs...</div>
+        </div>
+
+        <div class="claude-notice-banner" id="claude-notice">
+          <div class="notice-icon">💡</div>
+          <div class="notice-content">
+            <strong>Claude Desktop vs Claude Code CLI Note:</strong>
+            Claude Desktop authenticates via your consumer subscription (Claude Pro/Max), whereas Claude Code CLI communicates with Anthropic's developer API credits. If your CLI reports <em>"Credit balance is too low"</em>, link your Claude subscription using <code>claude setup-token</code>, or route requests through <strong>agy</strong> which is fully active and includes Gemini and Claude models!
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Interactive Playground -->
+      <section id="tab-playground" class="tab-content">
+        <div class="playground-layout">
+          <!-- Controls Panel -->
+          <div class="playground-sidebar card">
+            <h3>Configuration</h3>
+
+            <div class="form-group">
+              <label for="api-mode-select">API Mode</label>
+              <select id="api-mode-select" class="form-control">
+                <option value="chat">Chat Completions (/v1/chat/completions)</option>
+                <option value="text">Text Completions (/v1/completions)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="model-select">Model / Target</label>
+              <select id="model-select" class="form-control">
+                <!-- Dynamically populated -->
+                <option value="agy">agy (Default)</option>
+              </select>
+            </div>
+
+            <div class="form-group toggle-group">
+              <label for="stream-toggle">
+                <span>Streaming (SSE)</span>
+                <small class="text-muted">Server-Sent Events</small>
+              </label>
+              <input type="checkbox" id="stream-toggle" checked>
+            </div>
+
+            <div class="form-group">
+              <label for="reasoning-effort-select">Reasoning Effort</label>
+              <select id="reasoning-effort-select" class="form-control">
+                <option value="">Default (Provider defined)</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="temperature-input">
+                <span>Temperature</span>
+                <span id="temp-val" class="text-muted">0.7</span>
+              </label>
+              <input type="range" id="temperature-input" min="0" max="2" step="0.1" value="0.7">
+            </div>
+
+            <div class="form-group">
+              <label for="max-tokens-input">Max Tokens</label>
+              <input type="number" id="max-tokens-input" class="form-control" placeholder="Optional limit (e.g. 1024)">
+            </div>
+
+            <div class="form-group" id="system-prompt-group">
+              <label for="system-prompt-input">System Instructions</label>
+              <textarea id="system-prompt-input" class="form-control" rows="3" placeholder="You are a helpful coding assistant..."></textarea>
+            </div>
+          </div>
+
+          <!-- Chat / Playground Output Area -->
+          <div class="playground-main card">
+            <div class="playground-header">
+              <div class="tab-title-group">
+                <h3 id="playground-mode-title">Chat Conversation</h3>
+                <span id="stream-indicator" class="badge badge-info">Streaming Active</span>
+              </div>
+              <div class="metrics-row" id="metrics-row" style="display: none;">
+                <span class="metric">⏱️ <span id="metric-latency">0</span>ms</span>
+                <span class="metric">📝 Prompt: <span id="metric-prompt-tokens">0</span> tok</span>
+                <span class="metric">✨ Completion: <span id="metric-comp-tokens">0</span> tok</span>
+              </div>
+            </div>
+
+            <div class="chat-history" id="chat-history">
+              <div class="chat-placeholder">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <p>Send a message below to test your local AI CLI endpoints through standard OpenAI API formatting.</p>
+              </div>
+            </div>
+
+            <div class="chat-input-area">
+              <textarea id="prompt-input" class="chat-input" rows="2" placeholder="Ask a question or provide code to test... (Press Enter to send, Shift+Enter for newline)"></textarea>
+              <div class="input-actions">
+                <button id="clear-chat-btn" class="btn secondary" title="Clear conversation">Clear</button>
+                <button id="send-btn" class="btn primary">
+                  <span>Send</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Connect & SDKs -->
+      <section id="tab-docs" class="tab-content">
+        <div class="section-header">
+          <div>
+            <h2>How to Connect Any OpenAI Tool</h2>
+            <p class="text-muted">Agiary works as a drop-in replacement for OpenAI endpoints</p>
+          </div>
+        </div>
+
+        <div class="docs-grid">
+          <!-- Python SDK Card -->
+          <div class="card doc-card">
+            <div class="doc-card-header">
+              <h3>Python (openai package)</h3>
+              <button class="copy-code-btn" data-target="code-python">Copy</button>
+            </div>
+            <pre><code id="code-python">from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://127.0.0.1:8000/v1",
+    api_key="agiary"  # any dummy key
+)
+
+# 1. Non-streaming Chat Completion
+response = client.chat.completions.create(
+    model="agy",  # or "claude", "grok", "codex", "gemini-3.8-flash-high"
+    messages=[{"role": "user", "content": "Write a python fibonacci function"}],
+    stream=False
+)
+print(response.choices[0].message.content)
+
+# 2. Real-time Streaming
+stream = client.chat.completions.create(
+    model="agy",
+    messages=[{"role": "user", "content": "Explain quicksort"}],
+    stream=True
+)
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)</code></pre>
+          </div>
+
+          <!-- JavaScript / Node.js Card -->
+          <div class="card doc-card">
+            <div class="doc-card-header">
+              <h3>Node.js / JavaScript</h3>
+              <button class="copy-code-btn" data-target="code-node">Copy</button>
+            </div>
+            <pre><code id="code-node">import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  baseURL: 'http://127.0.0.1:8000/v1',
+  apiKey: 'agiary',
+});
+
+// Streaming chat completion
+const stream = await openai.chat.completions.create({
+  model: 'agy',
+  messages: [{ role: 'user', content: 'Say hello!' }],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || '');
+}</code></pre>
+          </div>
+
+          <!-- cURL Card -->
+          <div class="card doc-card">
+            <div class="doc-card-header">
+              <h3>cURL (Streaming & Sync)</h3>
+              <button class="copy-code-btn" data-target="code-curl">Copy</button>
+            </div>
+            <pre><code id="code-curl"># Streaming SSE
+curl -N http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+
+# Text / Legacy Completions API
+curl http://127.0.0.1:8000/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy",
+    "prompt": "Complete this sentence: In theory, there is no difference between theory and",
+    "stream": false
+  }'</code></pre>
+          </div>
+
+          <!-- Cursor / Continue.dev Card -->
+          <div class="card doc-card">
+            <div class="doc-card-header">
+              <h3>Cursor / Continue.dev / OpenWebUI Config</h3>
+              <button class="copy-code-btn" data-target="code-cursor">Copy</button>
+            </div>
+            <pre><code id="code-cursor">// In Continue config.json or Cursor custom OpenAI endpoint:
+{
+  "models": [
+    {
+      "title": "Agiary Local Gateway",
+      "provider": "openai",
+      "model": "agy",
+      "apiBase": "http://127.0.0.1:8000/v1",
+      "apiKey": "agiary"
+    }
+  ]
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Live Request Logs -->
+      <section id="tab-logs" class="tab-content">
+        <div class="section-header">
+          <div>
+            <h2>API Request Activity</h2>
+            <p class="text-muted">Live audit log of requests processed through Agikey</p>
+          </div>
+          <button id="refresh-logs-btn" class="btn secondary">Refresh Logs</button>
+        </div>
+
+        <div class="card table-card">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Model</th>
+                <th>Mode</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Tokens</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody">
+              <tr>
+                <td colspan="8" class="text-muted text-center">No API calls recorded yet. Send a request from the playground or via curl!</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Agikey v1.0.0 &bull; Local OpenAI Compatible Bridge</span>
+      <span>Supports <strong>agy</strong>, <strong>Claude Code</strong>, <strong>Grok</strong>, and <strong>Codex / ChatGPT</strong></span>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

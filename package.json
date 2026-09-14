@@ -1,0 +1,32 @@
+{
+  "name": "agikey",
+  "version": "1.0.0",
+  "description": "OpenAI-compatible local API gateway and dashboard for Claude Code, agy, Grok, and Codex/ChatGPT CLIs",
+  "main": "src/server.js",
+  "bin": {
+    "agikey": "./bin/agikey.js",
+    "agiary": "./bin/agikey.js"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node bin/agikey.js serve",
+    "dev": "node --watch bin/agikey.js serve",
+    "discover": "node bin/agikey.js discover",
+    "check": "node bin/agikey.js check",
+    "models": "node bin/agikey.js models",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "openai",
+    "api",
+    "claude-code",
+    "agy",
+    "grok",
+    "codex",
+    "chatgpt",
+    "llm",
+    "streaming"
+  ],
+  "author": "",
+  "license": "MIT"
+}
