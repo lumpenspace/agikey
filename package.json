@@ -7,26 +7,51 @@
     "agikey": "./bin/agikey.js",
     "agiary": "./bin/agikey.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "public",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "scripts": {
     "start": "node bin/agikey.js serve",
+    "serve": "node bin/agikey.js serve",
     "dev": "node --watch bin/agikey.js serve",
     "discover": "node bin/agikey.js discover",
+    "scan": "node bin/agikey.js discover",
     "check": "node bin/agikey.js check",
+    "status": "node bin/agikey.js status",
     "models": "node bin/agikey.js models",
+    "chat": "node bin/agikey.js chat",
     "test": "node --test test/*.test.js"
+  },
+  "homepage": "https://agikey.hyperplex.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lumpenspace/agikey"
+  },
+  "bugs": {
+    "url": "https://github.com/lumpenspace/agikey/issues"
   },
   "keywords": [
     "openai",
     "api",
+    "gateway",
     "claude-code",
     "agy",
+    "antigravity",
     "grok",
     "codex",
     "chatgpt",
-    "llm",
-    "streaming"
+    "streaming",
+    "sse",
+    "llm"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "Claudio Brandolino",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
