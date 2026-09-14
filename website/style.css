@@ -439,15 +439,16 @@ ol.mission-list li.active .hint { color: var(--amber-deep); }
 .status-info { color: var(--cyan); font-family: var(--mono); font-size: .78rem; font-weight: 600; }
 .status-auth { color: var(--amber); font-family: var(--mono); font-size: .78rem; font-weight: 600; }
 
-/* ---------- Two Modes Grid ---------- */
+/* ---------- Three Modes Grid ---------- */
 .modes-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
 }
-@media (max-width: 860px) { .modes-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) { .modes-grid { grid-template-columns: 1fr; } }
 
 .mode-box {
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-  padding: 28px;
+  padding: 24px;
+  display: flex; flex-direction: column;
 }
 .box-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
 .box-head .num {
@@ -462,7 +463,7 @@ ol.mission-list li.active .hint { color: var(--amber-deep); }
   display: block; font-family: var(--mono); font-size: .76rem; color: var(--cyan);
   margin-top: 3px;
 }
-.mode-box p { color: var(--dim); font-size: .88rem; margin-bottom: 18px; line-height: 1.6; }
+.mode-box p { color: var(--dim); font-size: .88rem; margin-bottom: 18px; line-height: 1.6; flex: 1; }
 
 .code-block {
   background: #08080c; border: 1px solid var(--line); border-radius: 8px;

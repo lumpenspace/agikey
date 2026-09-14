@@ -33,9 +33,9 @@
         <span class="brand-sub">“Local AI Coding CLIs. Served as OpenAI.”</span>
       </a>
       <nav class="resource-nav" aria-label="Project resources">
-        <a href="#dashboard">Web Client</a>
         <a href="#matrix">Matrix</a>
-        <a href="#modes">Two Modes</a>
+        <a href="#dashboard">Web Client</a>
+        <a href="#modes">Three Modes</a>
         <a href="#sdks">SDKs</a>
         <a href="https://github.com/lumpenspace/agikey" target="_blank" rel="noopener">GitHub</a>
         <a href="https://www.npmjs.com/package/agikey" target="_blank" rel="noopener">npm</a>
@@ -53,17 +53,13 @@
   </header>
 
   <main class="main-wrap">
-    <!-- Title and briefer description on top -->
+    <!-- Title and terse description on top -->
     <header class="hero-top">
-      <div class="kicker">
-        <span class="kicker-dot"></span>
-        <span>UNIVERSAL OPENAI GATEWAY &bull; V1.0.0</span>
-      </div>
       <h1 class="hero-headline">
-        Local AI Coding CLIs. <span class="amber-glow">Served as OpenAI.</span>
+        Use your subscription as APIs.
       </h1>
       <p class="hero-lead-brief">
-        One local gateway for <strong>Claude Code</strong>, <strong>agy</strong>, <strong>Grok</strong>, and <strong>Codex / ChatGPT</strong> — with real-time SSE streaming and persistent multi-turn conversations.
+        If you want to do quick local testing and avoid looking for an API key, or you've got much of your subscription left and want to make it worth it, this is for you.
       </p>
       <div class="quick-install">
         <span class="sym">⚿</span>
@@ -76,50 +72,43 @@
     <section class="hero-stage">
       <div class="stage-commands">
         <div class="commands-label">
-          <span>INTERACTIVE COMMAND SUITE</span>
-          <span class="hint-label">CLICK ANY TO RUN IN TERMINAL &rarr;</span>
+          <span>COMMANDS</span>
         </div>
         <ol class="mission-list" id="mission-list">
           <li class="active" data-demo="discover">
             <div>
               <b>agikey discover</b>
-              <span>Deep inspection of installed CLIs, capabilities & models. Caches instantly.</span>
-              <span class="hint">probes ~/.local/bin, PATH, nvm &bull; writes ~/.agikey/discovery.json</span>
+              <span>Detect installed CLIs and cache models.</span>
             </div>
           </li>
           <li data-demo="serve">
             <div>
-              <b>agikey serve --port 8000</b>
-              <span>Launches local OpenAI gateway & interactive browser UI dashboard.</span>
-              <span class="hint">instant ~20ms boot from cache &bull; binds http://127.0.0.1:8000/v1</span>
+              <b>agikey serve</b>
+              <span>Start local OpenAI gateway and web client.</span>
             </div>
           </li>
           <li data-demo="convs">
             <div>
               <b>agikey conversations</b>
-              <span>Persistent multi-turn session threads stored on disk.</span>
-              <span class="hint">cross-agent conversation state &bull; /v1/conversations</span>
+              <span>Disk-backed multi-turn sessions.</span>
             </div>
           </li>
           <li data-demo="stream">
             <div>
-              <b>POST /v1/chat/completions (Stream)</b>
-              <span>Real-time Server-Sent Events (SSE) streaming with OpenAI chunk wire format.</span>
-              <span class="hint">stream: true &bull; text_delta chunks &bull; [DONE] finish signal</span>
+              <b>POST /v1/chat/completions</b>
+              <span>Real-time SSE token streaming.</span>
             </div>
           </li>
           <li data-demo="models">
             <div>
               <b>agikey models</b>
-              <span>Inventory of all 53+ accessible models across all detected agents.</span>
-              <span class="hint">Gemini 3.8, Claude Sonnet 4.6, Grok 4.6, GPT-4o, o3-mini</span>
+              <span>List all discovered models across providers.</span>
             </div>
           </li>
           <li data-demo="python">
             <div>
-              <b>Python & Node.js Drop-In</b>
-              <span>Use standard OpenAI SDK by changing base_url="http://127.0.0.1:8000/v1".</span>
-              <span class="hint">zero changes to prompt logic &bull; supports reasoning effort</span>
+              <b>OpenAI SDK Drop-In</b>
+              <span>Point baseURL to http://127.0.0.1:8000/v1.</span>
             </div>
           </li>
         </ol>
@@ -151,12 +140,10 @@
       </div>
     </section>
 
-    <!-- Support Table (Requirement 4: Support table instead of the three cards, with LLM logos) -->
+    <!-- Support Table -->
     <section id="matrix" class="content-section">
       <div class="section-title">
-        <span class="sec-badge">⚿ COMPATIBILITY MATRIX</span>
-        <h2>Unified Agent Support Matrix</h2>
-        <p>Complete capability breakdown for each detected CLI tool</p>
+        <h2>Compatibility Matrix</h2>
       </div>
 
       <div class="matrix-wrap">
@@ -279,12 +266,10 @@
       </div>
     </section>
 
-    <!-- Built-In Web Client & Dashboard -->
+    <!-- Local Web Client -->
     <section id="dashboard" class="content-section">
       <div class="section-title">
-        <span class="sec-badge">⚿ LOCAL WEB CLIENT</span>
-        <h2>Built-In Gateway Web Dashboard</h2>
-        <p>Zero configuration required. Run <code>agikey serve</code> to launch the local cybernetic interface at <code>http://127.0.0.1:8000/</code></p>
+        <h2>Local Web Client</h2>
       </div>
 
       <div class="dashboard-showcase">
@@ -293,22 +278,22 @@
           <button class="dash-tab active" data-shot="playground" type="button">
             <span class="dash-tab-icon">💬</span>
             <div class="dash-tab-text">
-              <strong>Conversation Mode &amp; Playground</strong>
-              <small>Multi-turn threads, SSE deltas &amp; reasoning controls</small>
+              <strong>Conversation Mode</strong>
+              <small>Multi-turn threads</small>
             </div>
           </button>
           <button class="dash-tab" data-shot="agents" type="button">
             <span class="dash-tab-icon">⚡</span>
             <div class="dash-tab-text">
-              <strong>Detected CLI Agents</strong>
-              <small>Real-time capabilities, model discovery &amp; status checks</small>
+              <strong>CLI Agents</strong>
+              <small>Discovery &amp; status</small>
             </div>
           </button>
           <button class="dash-tab" data-shot="conversations" type="button">
             <span class="dash-tab-icon">📁</span>
             <div class="dash-tab-text">
-              <strong>Persistent Threads Table</strong>
-              <small>Disk-backed sessions, turn metrics &amp; instant resume</small>
+              <strong>Saved Threads</strong>
+              <small>Disk sessions</small>
             </div>
           </button>
         </div>
@@ -325,31 +310,31 @@
               <span class="dash-ssl-lock">🔒</span>
               <span class="dash-url-text" id="dash-url-display">http://127.0.0.1:8000/?conv=conv-oauth-refactor#playground</span>
             </div>
-            <div class="dash-badge">LOCAL GATEWAY CLIENT</div>
+            <div class="dash-badge">LOCAL CLIENT</div>
           </div>
 
           <div class="dash-image-container">
             <div class="dash-shot active" id="shot-playground">
               <img src="assets/dashboard-playground.png" alt="Agikey Conversation Mode Interactive Playground with active thread" loading="lazy">
               <div class="shot-caption">
-                <span class="caption-tag">CONVERSATION MODE</span>
-                <span>Select <code>/v1/conversations</code> to maintain stateful multi-turn threads across <code>agy</code>, <code>claude</code>, <code>grok</code>, and <code>codex</code> with real-time SSE token streaming and turn counters.</span>
+                <span class="caption-tag">CONVERSATIONS</span>
+                <span>Stateful multi-turn threads with streaming SSE tokens.</span>
               </div>
             </div>
 
             <div class="dash-shot" id="shot-agents">
               <img src="assets/dashboard-agents.png" alt="Agikey Detected CLI Agents Status Matrix" loading="lazy">
               <div class="shot-caption">
-                <span class="caption-tag">CLI DISCOVERY</span>
-                <span>Deep binary scanning inspects available models, chat/text compatibility, SSE support, JSON Schema, and auth requirements for all installed AI coding CLIs.</span>
+                <span class="caption-tag">DISCOVERY</span>
+                <span>CLI status, model inventory, and capability flags.</span>
               </div>
             </div>
 
             <div class="dash-shot" id="shot-conversations">
               <img src="assets/dashboard-conversations.png" alt="Agikey Persistent Conversation Threads Table" loading="lazy">
               <div class="shot-caption">
-                <span class="caption-tag">THREAD PERSISTENCE</span>
-                <span>All conversation histories persist under <code>~/.agikey/conversations/</code>. Resume any thread in the playground or directly from the terminal with <code>agikey chat -c &lt;id&gt;</code>.</span>
+                <span class="caption-tag">STORAGE</span>
+                <span>Disk-backed sessions under <code>~/.agikey/conversations/</code>.</span>
               </div>
             </div>
           </div>
@@ -359,29 +344,27 @@
         <div class="dash-features-grid">
           <div class="dash-feature-card">
             <div class="dfc-icon">⚿</div>
-            <h3>Full Conversation Mode</h3>
-            <p>Run stateful dialogues directly against local coding CLIs. The client auto-creates disk-backed sessions via <code>POST /v1/conversations</code> and streams turns with live token telemetry.</p>
+            <h3>Conversation Threads</h3>
+            <p>Stateful multi-turn sessions with live token telemetry.</p>
           </div>
           <div class="dash-feature-card">
             <div class="dfc-icon">◉</div>
-            <h3>Universal Agent Status</h3>
-            <p>Instantly check which AI CLIs are installed and authenticated. View model inventories and capability flags (reasoning effort, structured JSON schema output) at a glance.</p>
+            <h3>Agent Discovery</h3>
+            <p>Detects installed CLIs, models, and reasoning flags.</p>
           </div>
           <div class="dash-feature-card">
             <div class="dfc-icon">≋</div>
-            <h3>Real-Time Request Telemetry</h3>
-            <p>Inspect incoming requests from IDE extensions (Cursor, Continue.dev) or custom scripts in the Live Request Logs tab with latency timing, token counts, and HTTP status codes.</p>
+            <h3>Request Telemetry</h3>
+            <p>Live request inspector with latency and token metrics.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- The Two API Modes -->
+    <!-- Three API Modes -->
     <section id="modes" class="content-section">
       <div class="section-title">
-        <span class="sec-badge">⚿ DUAL API ARCHITECTURE</span>
-        <h2>The Two API Modes & Real-Time SSE</h2>
-        <p>Seamless support for both modern chat arrays and raw text completions</p>
+        <h2>Three API Modes</h2>
       </div>
 
       <div class="modes-grid">
@@ -389,21 +372,16 @@
           <div class="box-head">
             <span class="num">01</span>
             <div>
-              <h3>Chat Completions Mode</h3>
-              <code>POST /v1/chat/completions</code>
+              <h3>Conversation Mode</h3>
+              <code>POST /v1/conversations/:id/messages</code>
             </div>
           </div>
-          <p>Accepts standard multi-turn conversation arrays <code>[{ role, content }]</code>. Automatically extracts system prompt and passes conversational context to the underlying agent CLI.</p>
-          <pre class="code-block"><code>curl -N http://127.0.0.1:8000/v1/chat/completions \
+          <p>Stateful multi-turn sessions stored on disk. Append messages, stream tokens, and preserve context across restarts.</p>
+          <pre class="code-block"><code>curl -N http://127.0.0.1:8000/v1/conversations/conv-1/messages \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "agy",
-    "messages": [
-      {"role": "system", "content": "You are a code optimizer."},
-      {"role": "user", "content": "Optimize this binary tree search."}
-    ],
-    "stream": true,
-    "reasoning_effort": "high"
+    "content": "Refactor auth middleware",
+    "stream": true
   }'</code></pre>
         </div>
 
@@ -411,17 +389,36 @@
           <div class="box-head">
             <span class="num">02</span>
             <div>
-              <h3>Text Completions Mode</h3>
+              <h3>Chat Completions</h3>
+              <code>POST /v1/chat/completions</code>
+            </div>
+          </div>
+          <p>OpenAI-compatible multi-turn messages array with real-time SSE token streaming and system prompt routing.</p>
+          <pre class="code-block"><code>curl -N http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy",
+    "messages": [
+      {"role": "user", "content": "Optimize binary search."}
+    ],
+    "stream": true
+  }'</code></pre>
+        </div>
+
+        <div class="mode-box">
+          <div class="box-head">
+            <span class="num">03</span>
+            <div>
+              <h3>Text Completions</h3>
               <code>POST /v1/completions</code>
             </div>
           </div>
-          <p>Accepts raw single-string or prompt array input. Ideal for code-completion plugins, legacy LLM clients, and benchmarking harnesses.</p>
+          <p>Raw prompt string completions for legacy LLM clients, benchmarking, and code-completion editor tools.</p>
           <pre class="code-block"><code>curl http://127.0.0.1:8000/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "agy",
-    "prompt": "def quicksort(arr):\n    if len(arr) <= 1: return arr\n",
-    "max_tokens": 400,
+    "prompt": "def quicksort(arr):",
     "stream": false
   }'</code></pre>
         </div>
@@ -431,9 +428,7 @@
     <!-- Client SDKs & Integration Snippets -->
     <section id="sdks" class="content-section">
       <div class="section-title">
-        <span class="sec-badge">⚿ INTEGRATION SNIPPETS</span>
         <h2>Drop-In Client Compatibility</h2>
-        <p>Use existing OpenAI libraries without changing your application code</p>
       </div>
 
       <div class="snippet-box">
