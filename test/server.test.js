@@ -5,6 +5,15 @@ import { AgiaryServer } from '../src/server.js';
 import { parseMessages, extractContent } from '../src/utils/messages.js';
 import { formatChatChunk, formatChatResponse, formatTextResponse } from '../src/utils/sse.js';
 import { saveDiscoveryCache, loadDiscoveryCache, clearDiscoveryCache } from '../src/cache.js';
+import {
+  createConversation,
+  getConversation,
+  listConversations,
+  addMessageToConversation,
+  updateConversation,
+  deleteConversation,
+  createConversationId,
+} from '../src/conversations.js';
 
 describe('Agiary / Agikey Unit Tests', () => {
   it('should parse messages into conversation turns and system prompt', () => {
@@ -66,6 +75,36 @@ describe('Agiary / Agikey Unit Tests', () => {
     assert.ok(loaded);
     assert.equal(loaded.testKey, 'testVal');
     assert.equal(loaded.providers[0].id, 'agy');
+  });
+
+  it('should create, update, append messages, and delete a conversation', () => {
+    const conv = createConversation({
+      title: 'Test Thread',
+      model: 'agy',
+      messages: [{ role: 'user', content: 'Initial question' }],
+      metadata: { test: true },
+    });
+
+    assert.ok(conv.id.startsWith('conv-'));
+    assert.equal(conv.title, 'Test Thread');
+    assert.equal(conv.messages.length, 1);
+
+    const fetched = getConversation(conv.id);
+    assert.ok(fetched);
+    assert.equal(fetched.id, conv.id);
+
+    const appendRes = addMessageToConversation(conv.id, { role: 'assistant', content: 'Initial answer' });
+    assert.equal(appendRes.conversation.messages.length, 2);
+
+    const updated = updateConversation(conv.id, { title: 'Renamed Thread' });
+    assert.equal(updated.title, 'Renamed Thread');
+
+    const list = listConversations({ limit: 100 });
+    assert.ok(list.data.some(c => c.id === conv.id));
+
+    const deleted = deleteConversation(conv.id);
+    assert.equal(deleted, true);
+    assert.equal(getConversation(conv.id), null);
   });
 });
 
@@ -269,5 +308,119 @@ describe('HTTP API Server Integration Tests', () => {
     });
     assert.equal(res.status, 204);
     assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  });
+
+  describe('Conversations HTTP Endpoints', () => {
+    let testConvId;
+
+    it('POST /v1/conversations creates a new thread', async () => {
+      const res = await fetch(`${BASE_URL}/v1/conversations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'HTTP Test Thread',
+          model: 'agy',
+          messages: [{ role: 'user', content: 'What is 2+2?' }],
+          metadata: { client: 'integration-test' }
+        })
+      });
+
+      assert.equal(res.status, 201);
+      const conv = await res.json();
+      assert.ok(conv.id);
+      assert.equal(conv.object, 'conversation');
+      assert.equal(conv.title, 'HTTP Test Thread');
+      assert.equal(conv.messages.length, 1);
+      testConvId = conv.id;
+    });
+
+    it('GET /v1/conversations lists conversations including created thread', async () => {
+      const res = await fetch(`${BASE_URL}/v1/conversations`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.object, 'list');
+      assert.ok(Array.isArray(data.data));
+      assert.ok(data.data.some(c => c.id === testConvId));
+    });
+
+    it('GET /api/v1/conversations works identically for dual compatibility', async () => {
+      const res = await fetch(`${BASE_URL}/api/v1/conversations`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.object, 'list');
+      assert.ok(Array.isArray(data.data));
+    });
+
+    it('GET /v1/conversations/:id returns thread details', async () => {
+      const res = await fetch(`${BASE_URL}/v1/conversations/${testConvId}`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.id, testConvId);
+      assert.equal(data.title, 'HTTP Test Thread');
+    });
+
+    it('GET /v1/conversations/:id/messages returns messages in thread', async () => {
+      const res = await fetch(`${BASE_URL}/v1/conversations/${testConvId}/messages`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.object, 'list');
+      assert.equal(data.conversation_id, testConvId);
+      assert.equal(data.data.length, 1);
+      assert.equal(data.data[0].content, 'What is 2+2?');
+    });
+
+    it('PATCH /v1/conversations/:id updates title and metadata', async () => {
+      const res = await fetch(`${BASE_URL}/v1/conversations/${testConvId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Updated Thread Title',
+          metadata: { client: 'integration-test', updated: true }
+        })
+      });
+
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.title, 'Updated Thread Title');
+      assert.equal(data.metadata.updated, true);
+    });
+
+    it('POST /v1/chat/completions with conversation_id attaches to conversation history', async (t) => {
+      const readyProvider = detector.getAllProviders().find(p => p.installed && p.status === 'ready');
+      if (!readyProvider) return t.skip('No ready CLI provider in environment');
+
+      const res = await fetch(`${BASE_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'agy',
+          conversation_id: testConvId,
+          messages: [{ role: 'user', content: 'Say "HELLO_CONV"' }],
+          stream: false
+        })
+      });
+
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.conversation_id, testConvId);
+
+      // Verify thread now has user + assistant messages appended
+      const convRes = await fetch(`${BASE_URL}/v1/conversations/${testConvId}`);
+      const updatedConv = await convRes.json();
+      assert.ok(updatedConv.messages.length >= 3);
+      assert.ok(updatedConv.messages.some(m => m.role === 'assistant'));
+    });
+
+    it('DELETE /v1/conversations/:id deletes thread', async () => {
+      const res = await fetch(`${BASE_URL}/v1/conversations/${testConvId}`, {
+        method: 'DELETE'
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.deleted, true);
+
+      const checkRes = await fetch(`${BASE_URL}/v1/conversations/${testConvId}`);
+      assert.equal(checkRes.status, 404);
+    });
   });
 });

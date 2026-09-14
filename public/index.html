@@ -46,6 +46,7 @@
     <nav class="nav-tabs">
       <button class="nav-tab active" data-tab="providers">Agent Status</button>
       <button class="nav-tab" data-tab="playground">Interactive Playground</button>
+      <button class="nav-tab" data-tab="conversations">Conversations</button>
       <button class="nav-tab" data-tab="docs">Connect & SDKs</button>
       <button class="nav-tab" data-tab="logs">Live Request Logs</button>
     </nav>
@@ -117,6 +118,16 @@
                 <!-- Dynamically populated -->
                 <option value="agy">agy (Default)</option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <label for="conv-session-select">Session Thread</label>
+              <div style="display: flex; gap: 6px;">
+                <select id="conv-session-select" class="form-control" style="flex: 1;">
+                  <option value="">(New ephemeral session)</option>
+                </select>
+                <button type="button" id="new-conv-btn" class="btn secondary" title="Start new conversation" style="padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;">+ New</button>
+              </div>
             </div>
 
             <div class="form-group toggle-group">
@@ -191,7 +202,44 @@
         </div>
       </section>
 
-      <!-- Tab 3: Connect & SDKs -->
+      <!-- Tab 3: Conversations -->
+      <section id="tab-conversations" class="tab-content">
+        <div class="section-header">
+          <div>
+            <h2>Persistent Conversations</h2>
+            <p class="text-muted">Multi-turn session threads stored on disk under <code>~/.agikey/conversations/</code></p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="refresh-convs-btn" class="btn secondary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Refresh
+            </button>
+            <button id="new-conv-tab-btn" class="btn primary">
+              <span>+ New Thread</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="matrix-table-wrap">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th>Thread Title</th>
+                <th>ID</th>
+                <th>Model</th>
+                <th>Turns</th>
+                <th>Last Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="conversations-tbody">
+              <tr><td colspan="6" class="text-muted" style="text-align: center; padding: 24px;">Loading saved conversations...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tab 4: Connect & SDKs -->
       <section id="tab-docs" class="tab-content">
         <div class="section-header">
           <div>
@@ -302,10 +350,31 @@ curl http://127.0.0.1:8000/v1/completions \
   ]
 }</code></pre>
           </div>
+
+          <!-- Conversations API Card -->
+          <div class="card doc-card">
+            <div class="doc-card-header">
+              <h3>Conversations API & Sessions</h3>
+              <button class="copy-code-btn" data-target="code-convs">Copy</button>
+            </div>
+            <pre><code id="code-convs"># 1. Continue multi-turn thread via OpenAI API
+curl -N http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy",
+    "conversation_id": "conv-12345678",
+    "messages": [{"role": "user", "content": "What did we just discuss?"}],
+    "stream": true
+  }'
+
+# 2. Inspect threads via Agikey CLI
+agikey convs
+agikey chat -c conv-12345678 "Continue debugging"</code></pre>
+          </div>
         </div>
       </section>
 
-      <!-- Tab 4: Live Request Logs -->
+      <!-- Tab 5: Live Request Logs -->
       <section id="tab-logs" class="tab-content">
         <div class="section-header">
           <div>

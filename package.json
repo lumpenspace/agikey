@@ -24,6 +24,8 @@
     "check": "node bin/agikey.js check",
     "status": "node bin/agikey.js status",
     "models": "node bin/agikey.js models",
+    "conversations": "node bin/agikey.js conversations",
+    "convs": "node bin/agikey.js conversations",
     "chat": "node bin/agikey.js chat",
     "test": "node --test test/*.test.js"
   },

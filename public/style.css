@@ -661,6 +661,15 @@ body {
   text-align: center;
 }
 
+.text-danger {
+  color: var(--brand-danger);
+}
+
+.delete-conv-btn:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: var(--brand-danger) !important;
+}
+
 /* Footer */
 .app-footer {
   margin-top: auto;

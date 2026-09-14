@@ -35,6 +35,9 @@ tabButtons.forEach(btn => {
     if (btn.dataset.tab === 'logs') {
       loadLogs();
     }
+    if (btn.dataset.tab === 'conversations') {
+      loadConversations();
+    }
   });
 });
 
@@ -325,11 +328,13 @@ async function sendMessage() {
       });
 
       const endpoint = '/v1/chat/completions';
+      const convId = convSessionSelect ? convSessionSelect.value : null;
       const payload = {
         model,
         messages,
         stream: isStream,
         temperature,
+        ...(convId && { conversation_id: convId }),
         ...(maxTokens && { max_tokens: maxTokens }),
         ...(reasoning && { reasoning_effort: reasoning }),
       };
@@ -364,6 +369,9 @@ async function sendMessage() {
     isGenerating = false;
     sendBtn.disabled = false;
     promptInput.focus();
+    if (typeof loadConversations === 'function') {
+      loadConversations();
+    }
   }
 }
 
@@ -592,5 +600,189 @@ async function loadLogs() {
 
 document.getElementById('refresh-logs-btn')?.addEventListener('click', loadLogs);
 
+// -----------------------------------------------------------------
+// Conversations Management
+// -----------------------------------------------------------------
+const convSessionSelect = document.getElementById('conv-session-select');
+const newConvBtn = document.getElementById('new-conv-btn');
+const refreshConvsBtn = document.getElementById('refresh-convs-btn');
+const newConvTabBtn = document.getElementById('new-conv-tab-btn');
+const convsTbody = document.getElementById('conversations-tbody');
+
+async function loadConversations() {
+  try {
+    const res = await fetch('/v1/conversations');
+    const data = await res.json();
+    const convs = data.data || [];
+    renderConversationsTable(convs);
+    renderConversationsDropdown(convs);
+  } catch (err) {
+    console.error('Failed to load conversations:', err);
+  }
+}
+
+function renderConversationsDropdown(convs) {
+  if (!convSessionSelect) return;
+  const currentVal = convSessionSelect.value;
+  convSessionSelect.innerHTML = '<option value="">(New ephemeral session)</option>';
+
+  convs.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    const shortTitle = c.title.length > 28 ? c.title.slice(0, 28) + '...' : c.title;
+    opt.textContent = `${shortTitle} (${c.id.slice(0, 10)})`;
+    if (c.id === currentVal) opt.selected = true;
+    convSessionSelect.appendChild(opt);
+  });
+}
+
+function renderConversationsTable(convs) {
+  if (!convsTbody) return;
+  if (convs.length === 0) {
+    convsTbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center" style="padding: 24px;">No saved conversations yet. Start a conversation in the Playground or via the API!</td></tr>`;
+    return;
+  }
+
+  convsTbody.innerHTML = '';
+  convs.forEach(c => {
+    const tr = document.createElement('tr');
+    const dateStr = new Date(c.updated_at * 1000).toLocaleString();
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(c.title || 'Untitled')}</strong></td>
+      <td><code>${c.id}</code></td>
+      <td><span class="badge badge-info">${escapeHtml(c.model || 'agy')}</span></td>
+      <td><span class="badge badge-success">${c.message_count} msgs</span></td>
+      <td class="text-muted" style="font-size: 0.82rem;">${dateStr}</td>
+      <td>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn secondary resume-conv-btn" data-id="${c.id}" style="padding: 4px 10px; font-size: 0.78rem;">
+            Resume
+          </button>
+          <button class="btn secondary delete-conv-btn" data-id="${c.id}" style="padding: 4px 10px; font-size: 0.78rem; color: var(--brand-danger);">
+            Delete
+          </button>
+        </div>
+      </td>
+    `;
+    convsTbody.appendChild(tr);
+  });
+
+  // Attach action listeners
+  document.querySelectorAll('.resume-conv-btn').forEach(b => {
+    b.addEventListener('click', () => resumeConversationInPlayground(b.dataset.id));
+  });
+
+  document.querySelectorAll('.delete-conv-btn').forEach(b => {
+    b.addEventListener('click', () => handleDeleteConversation(b.dataset.id));
+  });
+}
+
+async function resumeConversationInPlayground(convId) {
+  try {
+    const res = await fetch(`/v1/conversations/${convId}`);
+    if (!res.ok) throw new Error('Conversation not found');
+    const conv = await res.json();
+
+    // Switch to playground tab
+    tabButtons.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => c.classList.remove('active'));
+    const playTabBtn = document.querySelector('.nav-tab[data-tab="playground"]');
+    const playContent = document.getElementById('tab-playground');
+    if (playTabBtn) playTabBtn.classList.add('active');
+    if (playContent) playContent.classList.add('active');
+
+    // Update session select
+    if (convSessionSelect) {
+      if (!Array.from(convSessionSelect.options).some(o => o.value === convId)) {
+        const opt = document.createElement('option');
+        opt.value = convId;
+        opt.textContent = `${conv.title} (${convId.slice(0, 10)})`;
+        convSessionSelect.appendChild(opt);
+      }
+      convSessionSelect.value = convId;
+    }
+
+    // Set model if valid
+    if (conv.model && modelSelect) {
+      if (Array.from(modelSelect.options).some(o => o.value === conv.model)) {
+        modelSelect.value = conv.model;
+      }
+    }
+
+    // Render past messages
+    chatHistory.innerHTML = '';
+    if (Array.isArray(conv.messages) && conv.messages.length > 0) {
+      conv.messages.forEach(m => {
+        appendMessage(m.role, m.content);
+      });
+    } else {
+      chatHistory.innerHTML = `
+        <div class="chat-placeholder">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <p>Conversation <code>${convId}</code> loaded with 0 messages. Type below to begin!</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    alert(`Could not load conversation: ${err.message}`);
+  }
+}
+
+async function handleDeleteConversation(convId) {
+  if (!confirm(`Are you sure you want to delete conversation ${convId}?`)) return;
+
+  try {
+    const res = await fetch(`/v1/conversations/${convId}`, { method: 'DELETE' });
+    if (res.ok) {
+      if (convSessionSelect && convSessionSelect.value === convId) {
+        startNewConversation();
+      }
+      await loadConversations();
+    } else {
+      alert('Failed to delete conversation');
+    }
+  } catch (err) {
+    alert(`Error deleting conversation: ${err.message}`);
+  }
+}
+
+function startNewConversation() {
+  if (convSessionSelect) convSessionSelect.value = '';
+  chatHistory.innerHTML = `
+    <div class="chat-placeholder">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <p>Send a message below to test your local AI CLI endpoints through standard OpenAI API formatting.</p>
+    </div>
+  `;
+  if (promptInput) promptInput.focus();
+}
+
+convSessionSelect?.addEventListener('change', () => {
+  const val = convSessionSelect.value;
+  if (val) {
+    resumeConversationInPlayground(val);
+  } else {
+    startNewConversation();
+  }
+});
+
+newConvBtn?.addEventListener('click', () => {
+  startNewConversation();
+});
+
+newConvTabBtn?.addEventListener('click', () => {
+  tabButtons.forEach(b => b.classList.remove('active'));
+  tabContents.forEach(c => c.classList.remove('active'));
+  const playTabBtn = document.querySelector('.nav-tab[data-tab="playground"]');
+  const playContent = document.getElementById('tab-playground');
+  if (playTabBtn) playTabBtn.classList.add('active');
+  if (playContent) playContent.classList.add('active');
+  startNewConversation();
+});
+
+refreshConvsBtn?.addEventListener('click', loadConversations);
+
 // Initialize on page load
 loadStatus();
+loadConversations();
+

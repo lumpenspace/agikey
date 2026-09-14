@@ -95,6 +95,7 @@ COMMANDS:
   serve, start              Start the local API gateway & web dashboard (default)
   check, status             Quick CLI status check (reads from cache or system)
   models                    List all available OpenAI model IDs
+  conversations, convs      List saved multi-turn conversations
   chat [prompt]             Send a quick prompt via the CLI
   clear-cache               Remove ~/.agikey/discovery.json cache
 
@@ -103,6 +104,7 @@ OPTIONS:
   -h, --host <ip>           Host to bind to (default: 127.0.0.1, env: HOST)
   -k, --key <string>        Require Bearer API key (optional, env: AGIKEY_API_KEY)
   -m, --model <name>        Target model (default: auto)
+  -c, --conversation <id>   Continue an existing persistent conversation thread
   --refresh                 Bypass cache and force fresh scan
   --json                    Output results as JSON
   --debug                   Enable verbose debug logging
@@ -213,6 +215,41 @@ Add to your Continue `config.json` or Cursor custom OpenAI model configuration:
     }
   ]
 }
+```
+
+---
+
+## Persistent Conversations & Sessions
+
+Agikey supports persistent multi-turn conversational threads stored locally under `~/.agikey/conversations/`. This enables maintaining context across turns regardless of which CLI agent handles them:
+
+### Endpoints:
+- `GET /v1/conversations` (or `/api/v1/conversations`): List all saved conversations.
+- `POST /v1/conversations`: Create a new conversation thread.
+- `GET /v1/conversations/:id`: Retrieve conversation details and turn history.
+- `PATCH /v1/conversations/:id`: Update title or metadata.
+- `DELETE /v1/conversations/:id`: Delete a conversation thread.
+- `GET /v1/conversations/:id/messages`: Get messages for a thread.
+- `POST /v1/conversations/:id/messages`: Append user message and run agent turn (supports streaming SSE or sync JSON).
+
+### Session Continuity via OpenAI Chat Completions:
+Pass `"conversation_id"` in `POST /v1/chat/completions` to automatically persist the turn and build on earlier history:
+
+```bash
+curl -N http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy",
+    "conversation_id": "conv-a1b2c3d4",
+    "messages": [{"role": "user", "content": "How do I optimize this function?"}],
+    "stream": true
+  }'
+```
+
+Or directly in the CLI:
+```bash
+agikey chat -c conv-a1b2c3d4 "Continue refactoring"
+agikey convs
 ```
 
 ---

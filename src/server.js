@@ -15,6 +15,15 @@ import {
 } from './utils/sse.js';
 import { logger } from './utils/logger.js';
 
+import {
+  listConversations,
+  getConversation,
+  createConversation,
+  addMessageToConversation,
+  updateConversation,
+  deleteConversation,
+} from './conversations.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PUBLIC_DIR = path.resolve(__dirname, '../public');
@@ -186,8 +195,221 @@ export class AgiaryServer {
     }
 
     // Check Auth for API routes
-    if (pathname.startsWith('/v1/') && !this.checkAuth(req)) {
+    if ((pathname.startsWith('/v1/') || pathname.startsWith('/api/v1/')) && !this.checkAuth(req)) {
       return this.sendError(res, 401, 'Incorrect or missing API key', 'unauthorized', 'invalid_api_key');
+    }
+
+    // -------------------------------------------------------------
+    // Conversations Endpoints (/v1/conversations & /api/v1/conversations)
+    // -------------------------------------------------------------
+
+    // GET /v1/conversations or GET /api/v1/conversations (List conversations)
+    if (req.method === 'GET' && (pathname === '/v1/conversations' || pathname === '/api/v1/conversations')) {
+      const limit = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
+      const offset = parseInt(parsedUrl.searchParams.get('offset') || '0', 10);
+      return this.sendJson(res, 200, listConversations({ limit, offset }));
+    }
+
+    // POST /v1/conversations or POST /api/v1/conversations (Create conversation)
+    if (req.method === 'POST' && (pathname === '/v1/conversations' || pathname === '/api/v1/conversations')) {
+      let body = {};
+      try {
+        body = await this.parseBody(req);
+      } catch {}
+      const conv = createConversation(body);
+      return this.sendJson(res, 201, conv);
+    }
+
+    // Sub-resource: /v1/conversations/:id/messages
+    const convMessagesMatch = pathname.match(/^\/(?:api\/)?v1\/conversations\/([^/]+)\/messages\/?$/);
+    if (convMessagesMatch) {
+      const convId = decodeURIComponent(convMessagesMatch[1]);
+
+      // GET /v1/conversations/:id/messages
+      if (req.method === 'GET') {
+        const conv = getConversation(convId);
+        if (!conv) {
+          return this.sendError(res, 404, `Conversation '${convId}' not found`, 'invalid_request_error', 'conversation_not_found');
+        }
+        return this.sendJson(res, 200, {
+          object: 'list',
+          conversation_id: convId,
+          data: conv.messages,
+        });
+      }
+
+      // POST /v1/conversations/:id/messages (Append message & execute turn)
+      if (req.method === 'POST') {
+        let body;
+        try {
+          body = await this.parseBody(req);
+        } catch (err) {
+          return this.sendError(res, 400, err.message, 'invalid_request_error');
+        }
+
+        let conv = getConversation(convId);
+        if (!conv) {
+          conv = createConversation({ id: convId, model: body.model || 'agy' });
+        }
+
+        const userContent = body.content || (body.message && body.message.content) || (Array.isArray(body.messages) && body.messages[body.messages.length - 1]?.content);
+        if (!userContent) {
+          return this.sendError(res, 400, "Missing required parameter 'content' or 'messages'.", 'invalid_request_error');
+        }
+
+        const userRole = body.role || 'user';
+        addMessageToConversation(convId, { role: userRole, content: userContent });
+
+        const updatedConv = getConversation(convId);
+        const targetModelId = body.model || updatedConv.model || 'agy';
+
+        let resolvedTarget;
+        try {
+          resolvedTarget = detector.resolveModelTarget(targetModelId);
+        } catch (err) {
+          return this.sendError(res, 404, err.message, 'model_not_found');
+        }
+
+        const { provider, model: targetModel } = resolvedTarget;
+        const completionId = createCompletionId('convmsg');
+        const responseModel = targetModelId;
+        const stream = Boolean(body.stream);
+
+        logger.info(`ConversationMessage [${stream ? 'STREAM' : 'SYNC'}]: conv=${convId} provider=${provider.id} model=${targetModel}`);
+
+        const adapter = createAdapter(provider);
+        const abortController = new AbortController();
+        req.on('close', () => {
+          if (!res.writableEnded) abortController.abort();
+        });
+
+        if (stream) {
+          this.setCorsHeaders(res);
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+          });
+
+          writeSSEChunk(res, {
+            id: completionId,
+            conversation_id: convId,
+            object: 'conversation.message.chunk',
+            delta: { role: 'assistant', content: '' },
+          });
+
+          let accumulated = '';
+          try {
+            const result = await adapter.execute({
+              messages: updatedConv.messages,
+              stream: true,
+              model: targetModel,
+              temperature: body.temperature,
+              maxTokens: body.max_tokens,
+              reasoningEffort: body.reasoning_effort,
+              signal: abortController.signal,
+              onDelta: delta => {
+                accumulated += delta;
+                writeSSEChunk(res, {
+                  id: completionId,
+                  conversation_id: convId,
+                  object: 'conversation.message.chunk',
+                  delta: { content: delta },
+                });
+              },
+            });
+
+            const finalText = accumulated || result.content || '';
+            addMessageToConversation(convId, { role: 'assistant', content: finalText });
+
+            writeSSEChunk(res, {
+              id: completionId,
+              conversation_id: convId,
+              object: 'conversation.message.chunk',
+              delta: {},
+              finish_reason: 'stop',
+            });
+            writeSSEDone(res);
+            res.end();
+            return;
+          } catch (err) {
+            logger.error(`Error in streaming conversation message: ${err.message}`);
+            writeSSEChunk(res, { error: { message: err.message, type: 'api_error' } });
+            writeSSEDone(res);
+            res.end();
+            return;
+          }
+        } else {
+          // Non-streaming
+          try {
+            const result = await adapter.execute({
+              messages: updatedConv.messages,
+              stream: false,
+              model: targetModel,
+              temperature: body.temperature,
+              maxTokens: body.max_tokens,
+              reasoningEffort: body.reasoning_effort,
+              signal: abortController.signal,
+            });
+
+            const finalReply = result.content || '';
+            addMessageToConversation(convId, { role: 'assistant', content: finalReply });
+            const freshConv = getConversation(convId);
+
+            return this.sendJson(res, 200, {
+              id: completionId,
+              conversation_id: convId,
+              object: 'conversation.message',
+              created: Math.floor(Date.now() / 1000),
+              model: responseModel,
+              role: 'assistant',
+              content: finalReply,
+              usage: result.usage,
+              conversation: freshConv,
+            });
+          } catch (err) {
+            return this.sendError(res, 500, err.message, 'api_error');
+          }
+        }
+      }
+    }
+
+    // Resource: /v1/conversations/:id
+    const singleConvMatch = pathname.match(/^\/(?:api\/)?v1\/conversations\/([^/]+)\/?$/);
+    if (singleConvMatch) {
+      const convId = decodeURIComponent(singleConvMatch[1]);
+
+      // GET /v1/conversations/:id
+      if (req.method === 'GET') {
+        const conv = getConversation(convId);
+        if (!conv) {
+          return this.sendError(res, 404, `Conversation '${convId}' not found`, 'invalid_request_error', 'conversation_not_found');
+        }
+        return this.sendJson(res, 200, conv);
+      }
+
+      // PATCH or POST /v1/conversations/:id (Update conversation)
+      if (req.method === 'PATCH' || req.method === 'POST') {
+        let body = {};
+        try {
+          body = await this.parseBody(req);
+        } catch {}
+        const conv = updateConversation(convId, body);
+        if (!conv) {
+          return this.sendError(res, 404, `Conversation '${convId}' not found`, 'invalid_request_error', 'conversation_not_found');
+        }
+        return this.sendJson(res, 200, conv);
+      }
+
+      // DELETE /v1/conversations/:id (Delete conversation)
+      if (req.method === 'DELETE') {
+        const deleted = deleteConversation(convId);
+        if (!deleted) {
+          return this.sendError(res, 404, `Conversation '${convId}' not found`, 'invalid_request_error', 'conversation_not_found');
+        }
+        return this.sendJson(res, 200, { id: convId, object: 'conversation.deleted', deleted: true });
+      }
     }
 
     // GET /v1/models
@@ -223,6 +445,7 @@ export class AgiaryServer {
         model,
         messages,
         stream = false,
+        conversation_id,
         temperature,
         max_tokens,
         max_completion_tokens,
@@ -232,6 +455,21 @@ export class AgiaryServer {
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return this.sendError(res, 400, "Missing required parameter 'messages'. Must be a non-empty array.", 'invalid_request_error');
+      }
+
+      let effectiveMessages = messages;
+      if (conversation_id) {
+        let existingConv = getConversation(conversation_id);
+        if (!existingConv) {
+          existingConv = createConversation({ id: conversation_id, model: model || 'agy' });
+        }
+        for (const m of messages) {
+          addMessageToConversation(conversation_id, m);
+        }
+        const updated = getConversation(conversation_id);
+        if (updated && updated.messages.length > 0) {
+          effectiveMessages = updated.messages;
+        }
       }
 
       let resolvedTarget;
@@ -245,7 +483,7 @@ export class AgiaryServer {
       const completionId = createCompletionId('chatcmpl');
       const responseModel = model || `${provider.id}/${targetModel}`;
 
-      logger.info(`ChatCompletion [${stream ? 'STREAM' : 'SYNC'}]: provider=${provider.id} model=${targetModel} messages=${messages.length}`);
+      logger.info(`ChatCompletion [${stream ? 'STREAM' : 'SYNC'}]: provider=${provider.id} model=${targetModel} messages=${effectiveMessages.length}${conversation_id ? ` conv=${conversation_id}` : ''}`);
 
       const adapter = createAdapter(provider);
       const abortController = new AbortController();
@@ -266,17 +504,20 @@ export class AgiaryServer {
         });
 
         // Initial chunk announcing role
-        writeSSEChunk(res, formatChatChunk({
+        const initChunk = formatChatChunk({
           id: completionId,
           model: responseModel,
           delta: { role: 'assistant', content: '' },
-        }));
+        });
+        if (conversation_id) initChunk.conversation_id = conversation_id;
+        writeSSEChunk(res, initChunk);
 
         let accumulatedTokens = 0;
+        let accumulatedText = '';
 
         try {
           const result = await adapter.execute({
-            messages,
+            messages: effectiveMessages,
             stream: true,
             model: targetModel,
             temperature,
@@ -285,24 +526,33 @@ export class AgiaryServer {
             responseFormat: response_format,
             signal: abortController.signal,
             onDelta: delta => {
-              writeSSEChunk(res, formatChatChunk({
+              accumulatedText += delta;
+              const chunk = formatChatChunk({
                 id: completionId,
                 model: responseModel,
                 delta: { content: delta },
-              }));
+              });
+              if (conversation_id) chunk.conversation_id = conversation_id;
+              writeSSEChunk(res, chunk);
             },
           });
 
           accumulatedTokens = result.usage?.total_tokens || 0;
+          const finalText = accumulatedText || result.content || '';
+          if (conversation_id) {
+            addMessageToConversation(conversation_id, { role: 'assistant', content: finalText });
+          }
 
           // Final chunk
-          writeSSEChunk(res, formatChatChunk({
+          const finChunk = formatChatChunk({
             id: completionId,
             model: responseModel,
             delta: {},
             finishReason: 'stop',
             usage: result.usage,
-          }));
+          });
+          if (conversation_id) finChunk.conversation_id = conversation_id;
+          writeSSEChunk(res, finChunk);
 
           writeSSEDone(res);
           res.end();
@@ -346,7 +596,7 @@ export class AgiaryServer {
       // Non-Streaming Mode
       try {
         const result = await adapter.execute({
-          messages,
+          messages: effectiveMessages,
           stream: false,
           model: targetModel,
           temperature,
@@ -356,6 +606,10 @@ export class AgiaryServer {
           signal: abortController.signal,
         });
 
+        if (conversation_id) {
+          addMessageToConversation(conversation_id, { role: 'assistant', content: result.content });
+        }
+
         const responseObj = formatChatResponse({
           id: completionId,
           model: responseModel,
@@ -363,6 +617,9 @@ export class AgiaryServer {
           finishReason: 'stop',
           usage: result.usage,
         });
+        if (conversation_id) {
+          responseObj.conversation_id = conversation_id;
+        }
 
         this.sendJson(res, 200, responseObj);
 

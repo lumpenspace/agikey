@@ -20,6 +20,7 @@ function printHelp() {
   \x1b[32mserve\x1b[0m, \x1b[32mstart\x1b[0m                Start the OpenAI-compatible HTTP API server & web dashboard (default)
   \x1b[32mcheck\x1b[0m, \x1b[32mstatus\x1b[0m               Quick CLI agent status check
   \x1b[32mmodels\x1b[0m                      List all available models across all installed agents
+  \x1b[32mconversations\x1b[0m, \x1b[32mconvs\x1b[0m        List persistent multi-turn conversation sessions
   \x1b[32mchat\x1b[0m [prompt]               Send a test prompt directly through the CLI
   \x1b[32mclear-cache\x1b[0m                 Remove the local discovery cache
   \x1b[32mhelp\x1b[0m, \x1b[32m--help\x1b[0m, \x1b[32m-h\x1b[0m             Show this help message
@@ -29,15 +30,17 @@ function printHelp() {
   \x1b[33m-h, --host <ip>\x1b[0m             Host to bind to (default: 127.0.0.1, env: HOST)
   \x1b[33m-k, --key <string>\x1b[0m          Require Bearer API key (optional, env: AGIKEY_API_KEY)
   \x1b[33m-m, --model <name>\x1b[0m          Model to target for chat command (default: auto)
+  \x1b[33m-c, --conversation <id>\x1b[0m     Continue a persistent conversation by ID
   \x1b[33m--refresh\x1b[0m                   Bypass cache and force fresh scan of system
   \x1b[33m--json\x1b[0m                      Output results as JSON
   \x1b[33m--debug\x1b[0m                     Enable verbose debug logging
 
 \x1b[1mEXAMPLES\x1b[0m
   $ agikey discover
-  $ agikey discover --json
   $ agikey serve --port 8000
+  $ agikey conversations
   $ agikey chat -m agy "Explain quicksort in 2 sentences"
+  $ agikey chat -c conv-1234 "Now in Python"
 `);
 }
 
@@ -157,7 +160,43 @@ async function runModels(forceRefresh = false) {
   console.log(`\nTotal: ${models.length} models\n`);
 }
 
-async function runChat(modelName, promptText) {
+async function runConversations(asJson = false) {
+  const { listConversations } = await import('../src/conversations.js');
+  const res = listConversations({ limit: 100 });
+
+  if (asJson) {
+    console.log(JSON.stringify(res, null, 2));
+    return;
+  }
+
+  console.log('\n\x1b[1m\x1b[38;5;214m⚿ Saved Conversations:\x1b[0m\n');
+  if (res.data.length === 0) {
+    console.log('  \x1b[90mNo conversations saved yet. Start one via /v1/conversations or agikey chat.\x1b[0m\n');
+    return;
+  }
+
+  console.log('\x1b[1m┌──────────────────────────┬──────────────────────────────┬─────────────┬──────────┬──────────────────────┐\x1b[0m');
+  console.log('\x1b[1m│ Conversation ID          │ Title                        │ Model       │ Messages │ Updated              │\x1b[0m');
+  console.log('\x1b[1m├──────────────────────────┼──────────────────────────────┼─────────────┼──────────┼──────────────────────┤\x1b[0m');
+
+  for (const c of res.data) {
+    const id = c.id.padEnd(24).slice(0, 24);
+    const title = (c.title || 'Untitled').padEnd(28).slice(0, 28);
+    const model = (c.model || 'agy').padEnd(11).slice(0, 11);
+    const msgs = String(c.message_count || 0).padStart(4).padEnd(8);
+    const date = new Date(c.updated_at * 1000).toISOString().replace('T', ' ').slice(0, 19).padEnd(20);
+    console.log(`│ \x1b[36m${id}\x1b[0m │ ${title} │ \x1b[33m${model}\x1b[0m │ ${msgs} │ \x1b[90m${date}\x1b[0m │`);
+  }
+  console.log('\x1b[1m└──────────────────────────┴──────────────────────────────┴─────────────┴──────────┴──────────────────────┘\x1b[0m\n');
+}
+
+async function runChat(modelName, promptText, conversationId = null) {
+  const {
+    getConversation,
+    createConversation,
+    addMessageToConversation,
+  } = await import('../src/conversations.js');
+
   await detector.init({ useCache: true });
   let target;
   try {
@@ -167,22 +206,44 @@ async function runChat(modelName, promptText) {
     process.exit(1);
   }
 
+  let convId = conversationId;
+  let messages = [];
+
+  if (convId) {
+    let conv = getConversation(convId);
+    if (!conv) {
+      conv = createConversation({ id: convId, model: target.provider.id });
+    }
+    addMessageToConversation(conv.id, { role: 'user', content: promptText });
+    const fresh = getConversation(conv.id);
+    messages = fresh.messages;
+    convId = conv.id;
+  } else {
+    messages = [{ role: 'user', content: promptText }];
+  }
+
   const { createAdapter } = await import('../src/adapters/index.js');
   const adapter = createAdapter(target.provider);
 
-  console.log(`\x1b[90m[Using ${target.provider.name} | Model: ${target.model}]\x1b[0m`);
+  console.log(`\x1b[90m[Using ${target.provider.name} | Model: ${target.model}${convId ? ` | Conv: ${convId}` : ''}]\x1b[0m`);
   console.log(`\x1b[1m\x1b[38;5;214m⚿ User:\x1b[0m ${promptText}\n`);
   process.stdout.write('\x1b[1m\x1b[38;5;214m⚿ Assistant:\x1b[0m ');
 
+  let fullReply = '';
   try {
     await adapter.execute({
-      messages: [{ role: 'user', content: promptText }],
+      messages,
       stream: true,
       model: target.model,
       onDelta: delta => {
+        fullReply += delta;
         process.stdout.write(delta);
       },
     });
+
+    if (convId) {
+      addMessageToConversation(convId, { role: 'assistant', content: fullReply });
+    }
     console.log('\n');
   } catch (err) {
     console.error(`\n\x1b[31mError:\x1b[0m ${err.message}`);
@@ -197,6 +258,7 @@ async function main() {
   let host = '127.0.0.1';
   let key = null;
   let model = null;
+  let conversationId = null;
   let debug = false;
   let asJson = false;
   let forceRefresh = false;
@@ -214,6 +276,8 @@ async function main() {
       command = 'check';
     } else if (arg === 'models') {
       command = 'models';
+    } else if (arg === 'conversations' || arg === 'convs') {
+      command = 'conversations';
     } else if (arg === 'chat') {
       command = 'chat';
     } else if (arg === 'clear-cache') {
@@ -228,6 +292,8 @@ async function main() {
       key = args[++i];
     } else if (arg === '-m' || arg === '--model') {
       model = args[++i];
+    } else if (arg === '-c' || arg === '--conversation') {
+      conversationId = args[++i];
     } else if (arg === '--refresh') {
       forceRefresh = true;
     } else if (arg === '--json') {
@@ -255,12 +321,14 @@ async function main() {
     await runCheck(asJson, forceRefresh);
   } else if (command === 'models') {
     await runModels(forceRefresh);
+  } else if (command === 'conversations') {
+    await runConversations(asJson);
   } else if (command === 'chat') {
     if (!promptText) {
       console.error('\x1b[31mError: Please provide a prompt for chat.\x1b[0m Example: agikey chat "Hello!"');
       process.exit(1);
     }
-    await runChat(model, promptText);
+    await runChat(model, promptText, conversationId);
   } else {
     const server = new AgiaryServer({
       port,
