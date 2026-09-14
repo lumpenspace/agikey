@@ -220,3 +220,29 @@ function escapeHtml(str) {
     "'": '&#39;',
   })[m]);
 }
+
+// ---------------- Dashboard Showcase Tabs ----------------
+const dashTabs = document.querySelectorAll('.dash-tab');
+const dashShots = document.querySelectorAll('.dash-shot');
+const dashUrlDisplay = document.getElementById('dash-url-display');
+
+const DASH_URLS = {
+  playground: 'http://127.0.0.1:8000/?conv=conv-oauth-refactor#playground',
+  agents: 'http://127.0.0.1:8000/#providers',
+  conversations: 'http://127.0.0.1:8000/#conversations'
+};
+
+dashTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const shotKey = tab.dataset.shot;
+    dashTabs.forEach(t => t.classList.remove('active'));
+    dashShots.forEach(s => s.classList.remove('active'));
+
+    tab.classList.add('active');
+    const targetShot = document.getElementById(`shot-${shotKey}`);
+    if (targetShot) targetShot.classList.add('active');
+    if (dashUrlDisplay && DASH_URLS[shotKey]) {
+      dashUrlDisplay.textContent = DASH_URLS[shotKey];
+    }
+  });
+});

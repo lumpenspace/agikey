@@ -33,6 +33,7 @@
         <span class="brand-sub">“Local AI Coding CLIs. Served as OpenAI.”</span>
       </a>
       <nav class="resource-nav" aria-label="Project resources">
+        <a href="#dashboard">Web Client</a>
         <a href="#matrix">Matrix</a>
         <a href="#modes">Two Modes</a>
         <a href="#sdks">SDKs</a>
@@ -275,6 +276,103 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- Built-In Web Client & Dashboard -->
+    <section id="dashboard" class="content-section">
+      <div class="section-title">
+        <span class="sec-badge">⚿ LOCAL WEB CLIENT</span>
+        <h2>Built-In Gateway Web Dashboard</h2>
+        <p>Zero configuration required. Run <code>agikey serve</code> to launch the local cybernetic interface at <code>http://127.0.0.1:8000/</code></p>
+      </div>
+
+      <div class="dashboard-showcase">
+        <!-- Interactive Preview Tabs -->
+        <div class="dashboard-nav-tabs">
+          <button class="dash-tab active" data-shot="playground" type="button">
+            <span class="dash-tab-icon">💬</span>
+            <div class="dash-tab-text">
+              <strong>Conversation Mode &amp; Playground</strong>
+              <small>Multi-turn threads, SSE deltas &amp; reasoning controls</small>
+            </div>
+          </button>
+          <button class="dash-tab" data-shot="agents" type="button">
+            <span class="dash-tab-icon">⚡</span>
+            <div class="dash-tab-text">
+              <strong>Detected CLI Agents</strong>
+              <small>Real-time capabilities, model discovery &amp; status checks</small>
+            </div>
+          </button>
+          <button class="dash-tab" data-shot="conversations" type="button">
+            <span class="dash-tab-icon">📁</span>
+            <div class="dash-tab-text">
+              <strong>Persistent Threads Table</strong>
+              <small>Disk-backed sessions, turn metrics &amp; instant resume</small>
+            </div>
+          </button>
+        </div>
+
+        <!-- Interactive Screen Frame -->
+        <div class="dash-preview-frame">
+          <div class="dash-browser-bar">
+            <div class="dots">
+              <span class="dot-d d-red"></span>
+              <span class="dot-d d-amb"></span>
+              <span class="dot-d d-grn"></span>
+            </div>
+            <div class="dash-url-bar">
+              <span class="dash-ssl-lock">🔒</span>
+              <span class="dash-url-text" id="dash-url-display">http://127.0.0.1:8000/?conv=conv-oauth-refactor#playground</span>
+            </div>
+            <div class="dash-badge">LOCAL GATEWAY CLIENT</div>
+          </div>
+
+          <div class="dash-image-container">
+            <div class="dash-shot active" id="shot-playground">
+              <img src="assets/dashboard-playground.png" alt="Agikey Conversation Mode Interactive Playground with active thread" loading="lazy">
+              <div class="shot-caption">
+                <span class="caption-tag">CONVERSATION MODE</span>
+                <span>Select <code>/v1/conversations</code> to maintain stateful multi-turn threads across <code>agy</code>, <code>claude</code>, <code>grok</code>, and <code>codex</code> with real-time SSE token streaming and turn counters.</span>
+              </div>
+            </div>
+
+            <div class="dash-shot" id="shot-agents">
+              <img src="assets/dashboard-agents.png" alt="Agikey Detected CLI Agents Status Matrix" loading="lazy">
+              <div class="shot-caption">
+                <span class="caption-tag">CLI DISCOVERY</span>
+                <span>Deep binary scanning inspects available models, chat/text compatibility, SSE support, JSON Schema, and auth requirements for all installed AI coding CLIs.</span>
+              </div>
+            </div>
+
+            <div class="dash-shot" id="shot-conversations">
+              <img src="assets/dashboard-conversations.png" alt="Agikey Persistent Conversation Threads Table" loading="lazy">
+              <div class="shot-caption">
+                <span class="caption-tag">THREAD PERSISTENCE</span>
+                <span>All conversation histories persist under <code>~/.agikey/conversations/</code>. Resume any thread in the playground or directly from the terminal with <code>agikey chat -c &lt;id&gt;</code>.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Feature Cards under the preview -->
+        <div class="dash-features-grid">
+          <div class="dash-feature-card">
+            <div class="dfc-icon">⚿</div>
+            <h3>Full Conversation Mode</h3>
+            <p>Run stateful dialogues directly against local coding CLIs. The client auto-creates disk-backed sessions via <code>POST /v1/conversations</code> and streams turns with live token telemetry.</p>
+          </div>
+          <div class="dash-feature-card">
+            <div class="dfc-icon">◉</div>
+            <h3>Universal Agent Status</h3>
+            <p>Instantly check which AI CLIs are installed and authenticated. View model inventories and capability flags (reasoning effort, structured JSON schema output) at a glance.</p>
+          </div>
+          <div class="dash-feature-card">
+            <div class="dfc-icon">≋</div>
+            <h3>Real-Time Request Telemetry</h3>
+            <p>Inspect incoming requests from IDE extensions (Cursor, Continue.dev) or custom scripts in the Live Request Logs tab with latency timing, token counts, and HTTP status codes.</p>
+          </div>
+        </div>
       </div>
     </section>
 

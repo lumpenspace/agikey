@@ -41,6 +41,20 @@ tabButtons.forEach(btn => {
   });
 });
 
+function activateTabFromHash() {
+  const hash = window.location.hash.replace('#', '');
+  if (hash) {
+    const tabBtn = document.querySelector(`.nav-tab[data-tab="${hash}"]`);
+    if (tabBtn) tabBtn.click();
+  }
+  const params = new URLSearchParams(window.location.search);
+  const convId = params.get('conv');
+  if (convId && typeof resumeConversationInPlayground === 'function') {
+    resumeConversationInPlayground(convId);
+  }
+}
+window.addEventListener('hashchange', activateTabFromHash);
+
 // Endpoint Copy Button
 const copyEndpointBtn = document.getElementById('copy-endpoint-btn');
 copyEndpointBtn.addEventListener('click', () => {
@@ -900,5 +914,7 @@ refreshConvsBtn?.addEventListener('click', loadConversations);
 // Initialize on page load
 updateApiModeUI();
 loadStatus();
-loadConversations();
+loadConversations().then(() => {
+  activateTabFromHash();
+});
 
