@@ -69,50 +69,56 @@ const DEMOS = {
   }
 };
 
-let currentTimer = null;
+let playToken = 0;
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-function renderDemo(demoKey) {
+async function play(demoKey) {
+  const token = ++playToken;
   const demo = DEMOS[demoKey];
   if (!demo) return;
-
-  if (currentTimer) clearTimeout(currentTimer);
 
   termTitle.textContent = demo.title;
   termScreen.innerHTML = '';
 
-  let idx = 0;
-  function printNext() {
-    if (idx < demo.lines.length) {
-      const line = demo.lines[idx];
-      const div = document.createElement('div');
+  const caret = document.createElement('span');
+  caret.className = 'caret-amber';
+  termScreen.appendChild(caret);
 
-      if (line.type === 'cmd') {
-        div.innerHTML = `<span class="t-prompt">⚿ $</span> <span class="t-cmd">${escapeHtml(line.text)}</span>`;
-      } else {
-        const clsMap = {
-          dim: 't-dim',
-          ok: 't-ok',
-          amber: 't-amber',
-          cyan: 't-cyan',
-          purple: 't-purple'
-        };
-        div.className = clsMap[line.type] || '';
-        div.textContent = line.text;
+  for (const line of demo.lines) {
+    if (token !== playToken) return;
+
+    const div = document.createElement('div');
+    termScreen.insertBefore(div, caret);
+
+    if (line.type === 'cmd') {
+      div.innerHTML = `<span class="t-prompt">⚿ $</span> <span class="t-cmd"></span>`;
+      const target = div.querySelector('.t-cmd');
+      const text = line.text;
+
+      // Type command character by character
+      for (let i = 0; i < text.length; i += 2) {
+        if (token !== playToken) return;
+        target.textContent += text.slice(i, i + 2);
+        termScreen.scrollTop = termScreen.scrollHeight;
+        await sleep(18);
       }
-
-      termScreen.appendChild(div);
-      termScreen.scrollTop = termScreen.scrollHeight;
-      idx++;
-      currentTimer = setTimeout(printNext, idx === 1 ? 250 : 120);
+      await sleep(140);
     } else {
-      // Append blinking amber caret
-      const caret = document.createElement('span');
-      caret.className = 'caret-amber';
-      termScreen.appendChild(caret);
+      const clsMap = {
+        dim: 't-dim',
+        ok: 't-ok',
+        amber: 't-amber',
+        cyan: 't-cyan',
+        purple: 't-purple'
+      };
+      div.className = clsMap[line.type] || '';
+      div.textContent = line.text;
+      termScreen.scrollTop = termScreen.scrollHeight;
+      await sleep(line.type === 'ok' ? 80 : 45);
     }
   }
 
-  printNext();
+  termScreen.scrollTop = termScreen.scrollHeight;
 }
 
 // Attach click listeners to mission list items
@@ -123,13 +129,13 @@ if (missionList) {
       items.forEach(i => i.classList.remove('active'));
       li.classList.add('active');
       const demoKey = li.dataset.demo;
-      renderDemo(demoKey);
+      play(demoKey);
     });
   });
 }
 
 // Initial render
-renderDemo('discover');
+play('discover');
 
 // ---------------- Theme Toggle ----------------
 const themeBtn = document.getElementById('theme-btn');

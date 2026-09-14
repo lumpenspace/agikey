@@ -21,9 +21,7 @@
     <header class="app-header">
       <div class="header-left">
         <div class="brand-logo">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+          <span class="brand-sym">⚿</span>
         </div>
         <div>
           <h1 class="brand-title">Agikey</h1>
@@ -67,9 +65,26 @@
           </button>
         </div>
 
-        <div class="providers-grid" id="providers-grid">
-          <!-- Populated by JavaScript -->
-          <div class="card skeleton-card">Scanning system for CLIs...</div>
+        <div class="matrix-table-wrap">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th>Agent / Provider</th>
+                <th>CLI Binary</th>
+                <th>Discovered Models</th>
+                <th>Chat API</th>
+                <th>Text API</th>
+                <th>SSE Stream</th>
+                <th>Reasoning</th>
+                <th>JSON Schema</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="providers-tbody">
+              <tr><td colspan="10" class="text-muted" style="text-align: center; padding: 24px;">Scanning system for CLIs...</td></tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="claude-notice-banner" id="claude-notice">

@@ -78,74 +78,69 @@ async function loadStatus() {
   }
 }
 
+const LOGOS = {
+  agy: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z" fill="url(#gem-grad-app)"/><defs><linearGradient id="gem-grad-app" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#4E8CFF"/><stop offset="0.5" stop-color="#B77BFF"/><stop offset="1" stop-color="#FF6B99"/></linearGradient></defs></svg>`,
+  claude: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#D97757"><path d="M12 2.5a1.2 1.2 0 0 1 1.15.86l1.37 4.8 4.8-1.37a1.2 1.2 0 0 1 1.49 1.49l-1.37 4.8 4.8 1.37a1.2 1.2 0 0 1 0 2.3l-4.8 1.37 1.37 4.8a1.2 1.2 0 0 1-1.49 1.49l-4.8-1.37-1.37 4.8a1.2 1.2 0 0 1-2.3 0l-1.37-4.8-4.8 1.37a1.2 1.2 0 0 1-1.49-1.49l1.37-4.8-4.8-1.37a1.2 1.2 0 0 1 0-2.3l4.8-1.37-1.37-4.8a1.2 1.2 0 0 1 1.49-1.49l4.8 1.37 1.37-4.8A1.2 1.2 0 0 1 12 2.5z"/></svg>`,
+  grok: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  codex: `<svg width="22" height="22" viewBox="0 0 24 24" fill="#10A37F"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.08 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.493zm-9.66-4.665a4.474 4.474 0 0 1-.534-3.012l.142.085 4.783 2.759a.77.77 0 0 0 .78 0l5.842-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.49a4.5 4.5 0 0 1-6.14-1.725zM2.34 8.946a4.47 4.47 0 0 1 2.346-2.024v5.676a.79.79 0 0 0 .393.681l5.842 3.37-2.02 1.168a.078.078 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 8.946zm16.597 3.855l-5.843-3.37 2.02-1.168a.078.078 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.402-.68zM20.177 6.47a4.476 4.476 0 0 1 .535 3.013l-.142-.085-4.783-2.759a.77.77 0 0 0-.78 0l-5.842 3.37V7.676a.08.08 0 0 1 .033-.062l4.84-2.798a4.5 4.5 0 0 1 6.14 1.725zM12 13.578l-2.484-1.434 2.484-1.434 2.484 1.434L12 13.578z"/></svg>`
+};
+
 function renderProviders(providers) {
-  const container = document.getElementById('providers-grid');
-  container.innerHTML = '';
+  const tbody = document.getElementById('providers-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
 
   providers.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'card provider-card';
+    const tr = document.createElement('tr');
 
-    let statusBadgeClass = 'badge-danger';
-    let statusText = 'Not Installed';
-
+    let statusPill = `<span class="badge badge-danger">Not Found</span>`;
     if (p.installed) {
       if (p.status === 'ready') {
-        statusBadgeClass = 'badge-success';
-        statusText = 'Ready';
+        statusPill = `<span class="badge badge-success">✓ Ready</span>`;
       } else if (p.status === 'needs_auth') {
-        statusBadgeClass = 'badge-warning';
-        statusText = 'Needs Auth';
+        statusPill = `<span class="badge badge-warning">⚡ Needs Auth</span>`;
       } else {
-        statusBadgeClass = 'badge-info';
-        statusText = 'Installed';
+        statusPill = `<span class="badge badge-info">● Installed</span>`;
       }
     }
 
-    const shortId = p.id;
-    const initial = p.name.charAt(0).toUpperCase();
+    const logoSvg = LOGOS[p.id] || `<span class="provider-fallback">${p.id.charAt(0).toUpperCase()}</span>`;
+    const binName = p.binaryPath ? p.binaryPath.split('/').pop() : 'none';
+    const modelsCount = p.models ? p.models.length : 0;
+    const topModel = p.models && p.models[0] ? p.models[0].id : '';
 
-    card.innerHTML = `
-      <div>
-        <div class="provider-header">
-          <div class="provider-title-group">
-            <div class="provider-icon ${shortId}">${initial}</div>
-            <div>
-              <h3 style="font-size: 1rem; font-weight: 600;">${p.name}</h3>
-              <span class="text-muted" style="font-size: 0.78rem;">ID: <code>${p.id}</code></span>
-            </div>
-          </div>
-          <span class="badge ${statusBadgeClass}">${statusText}</span>
-        </div>
+    const reasoningSupport = p.id === 'agy' ? '✓ low|med|high' : (p.id === 'grok' || p.id === 'codex' ? '✓ Supported' : '—');
+    const schemaSupport = p.capabilities && p.capabilities.jsonSchema ? '✓ Supported' : (p.id === 'claude' || p.id === 'agy' || p.id === 'grok' || p.id === 'codex' ? '✓ Supported' : '—');
 
-        <div class="provider-details" style="margin-top: 14px;">
-          <div class="detail-row">
-            <span class="detail-label">Status Msg:</span>
-            <span class="detail-value" style="font-family: inherit; font-size: 0.8rem;">${p.statusMessage || '-'}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Version:</span>
-            <span class="detail-value">${p.version ? p.version.split('\n')[0] : 'N/A'}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Binary:</span>
-            <span class="detail-value" title="${p.binaryPath || 'None'}">${p.binaryPath ? p.binaryPath.split('/').pop() : 'None'}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Models:</span>
-            <span class="detail-value">${p.models ? p.models.length : 0} available</span>
+    tr.innerHTML = `
+      <td>
+        <div class="table-brand-cell">
+          <div class="llm-logo-box ${p.id}">${logoSvg}</div>
+          <div>
+            <strong>${p.name}</strong>
+            <span class="text-muted" style="display:block; font-size: 0.74rem;">${p.version ? p.version.split('\n')[0] : 'v1.0'}</span>
           </div>
         </div>
-      </div>
-
-      <div style="display: flex; gap: 8px; margin-top: 10px;">
-        <button class="btn secondary ping-btn" data-provider="${p.id}" style="width: 100%; font-size: 0.8rem;" ${!p.installed ? 'disabled' : ''}>
-          ⚡ Test in Playground
+      </td>
+      <td><code>${binName}</code></td>
+      <td>
+        <span class="badge badge-info">${modelsCount} models</span>
+        ${topModel ? `<div class="text-muted" style="font-size: 0.72rem; margin-top: 3px;">${topModel}</div>` : ''}
+      </td>
+      <td><span class="text-success">✓ Full</span></td>
+      <td><span class="text-success">✓ Full</span></td>
+      <td><span class="text-success">✓ SSE</span></td>
+      <td><span class="text-muted">${reasoningSupport}</span></td>
+      <td><span class="text-muted">${schemaSupport}</span></td>
+      <td>${statusPill}</td>
+      <td>
+        <button class="btn secondary ping-btn" data-provider="${p.id}" style="padding: 4px 10px; font-size: 0.78rem;" ${!p.installed ? 'disabled' : ''}>
+          Test
         </button>
-      </div>
+      </td>
     `;
 
-    container.appendChild(card);
+    tbody.appendChild(tr);
   });
 
   // Attach test buttons
