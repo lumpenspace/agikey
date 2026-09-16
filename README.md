@@ -1,285 +1,181 @@
-# Agikey (Agiary)
+# Agikey
 
-> **OpenAI-Compatible Local API Gateway and Dashboard for AI Coding CLIs**  
-> Turn your locally installed AI agents (**Claude Code**, **agy**, **Grok**, and **Codex/ChatGPT**) into unified OpenAI API endpoints (`/v1/chat/completions`, `/v1/completions`, `/v1/models`).
+**Your agents. One local API.**
 
----
+Agikey (formerly Agiary) is a local HTTP gateway for **agy, Claude Code, Grok, and Codex**. It exposes a subset of OpenAI's text chat/completions interface and includes a dashboard for discovery, prompts, and saved conversations. It uses native Node.js modules with **zero runtime dependencies**.
 
-## Features
+The gateway runs locally; provider CLIs still contact their own services. An installed CLI and working provider authentication are prerequisites. Discovery is not proof that generation works.
 
-- 🔍 **Separate Discovery Command (`agikey discover`)**: Deeply inspects your system for installed AI coding agent CLIs, probes paths, versions, auth status, available models, and caches results to `~/.agikey/discovery.json` for lightning-fast server startup.
-- ⚡ **OpenAI Drop-In Compatibility**: Use your favorite OpenAI SDKs (Python, Node.js), HTTP clients (`curl`), or IDE extensions (Cursor, Continue.dev, OpenWebUI) by simply setting `base_url="http://127.0.0.1:8000/v1"`.
-- 🔄 **The Two Core API Modes**:
-  - **Chat Completions Mode (`/v1/chat/completions`)**: Accepts standard multi-turn `messages: [{ role, content }]` arrays.
-  - **Text Completions Mode (`/v1/completions`)**: Accepts single string or array `prompt` for legacy tools and completion models.
-- 🌊 **The Two Streaming Modes**:
-  - **Streaming Mode (`stream: true`)**: Real-time Server-Sent Events (SSE) streaming token chunks (`data: {...}\n\n`) ending with `data: [DONE]`.
-  - **Non-Streaming Mode (`stream: false`)**: Blocking JSON response formatted according to the standard OpenAI `chat.completion` schema.
-- ⚙️ **Rich OpenAI Parameters Supported**:
-  - `model`: Target a specific provider (`agy`, `claude`, `grok`, `codex`, `chatgpt`) or a model ID (`gemini-3.8-flash-high`, `claude-3-7-sonnet`, `grok-4.6`, `o3-mini`, etc.).
-  - `reasoning_effort`: `low`, `medium`, `high` (mapped to `agy --effort`, `grok --reasoning-effort`, and Codex reasoning effort).
-  - `response_format`: Structured JSON mode (`{"type": "json_object"}` or schema) mapped to CLI `--json-schema`.
-  - `temperature`, `max_tokens` / `max_completion_tokens`.
-  - `system` / developer prompt injection.
-- 🖥️ **Modern Web Dashboard & Playground**: Served at `http://localhost:8000/` with light/dark theme support, live provider status cards, real-time streaming chat playground, copy-pasteable SDK snippets, and live request audit logs.
-- 🪶 **Zero External Runtime Dependencies**: Built with native Node.js 24 ES modules, HTTP server, and child processes. Starts in ~20ms.
+## Install and run
 
----
+Requires Node.js 18 or later and macOS or Linux. Use a maintained Node.js release. Windows has not been validated.
 
-## Quick Start
+**Publication status:** `agikey` and `agiary` returned 404 from the public npm registry on September 16, 2026. This repository prepares the package `agikey@1.0.1`; it is not published yet. Both `agikey` and `agiary` commands are included in that single package.
 
-### 1. Run Discovery & Caching
+Until publication, install from source:
 
-Scan your machine for installed CLIs and cache the configuration:
-
-```bash
-# Run deep discovery and cache results
-./bin/agikey.js discover
-
-# Or output pure JSON
-./bin/agikey.js discover --json
+```sh
+git clone https://github.com/lumpenspace/agikey.git
+cd agikey
+npm test
+npm link
+agikey discover
+agikey serve
 ```
 
-Output example:
-```
-=================================================================
-         🔍 AGIKEY SYSTEM DISCOVERY & AGENT INSPECTION           
-=================================================================
+Open **http://127.0.0.1:8000** for the local dashboard. The API base is **http://127.0.0.1:8000/v1**. `node bin/agikey.js` also works without linking.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Antigravity CLI (agy) (agy)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ✓ Status: READY (Ready to serve)
-  Binary:   /Users/username/.local/bin/agy
-  Version:  1.2.2
-  Features: ✓ SSE Streaming  ✓ JSON Mode  ✓ Reasoning Effort  ✓ System Prompts
-  Models (14):
-    - gemini-3.8-flash-high (Gemini 3.8 Flash (High))
-    - claude-sonnet-4-6 (Claude Sonnet 4.6 (Thinking))
-    ...
+Use `agikey chat -m agy "Reply with hello"` to check generation after discovery. Provider errors (authentication, credits, incompatible models, CLI version) are surfaced to the caller.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Claude Code (claude)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ✓ Status: READY (Installed)
-  Binary:   /Users/username/.nvm/versions/node/v24.15.0/bin/claude
-  Version:  2.1.199 (Claude Code)
-  Features: ✓ SSE Streaming  ✓ JSON Mode  ✓ System Prompts
-  Models (4):
-    - claude-3-7-sonnet (Claude 3.7 Sonnet)
-    ...
+## Connect
 
-✓ Cached discovery configuration to: ~/.agikey/discovery.json
-```
+Install the OpenAI SDK in your client application, not in this gateway.
 
-### 2. Start the Local API Server & Dashboard
-
-```bash
-# Start server on default port 8000
-npm start
-# or
-./bin/agikey.js serve --port 8000
-```
-
-Open your browser at **`http://localhost:8000/`** to view the interactive dashboard.
-
----
-
-## CLI Usage
-
-```bash
-agikey [command] [options]
-
-COMMANDS:
-  discover, scan, detect    Deep discovery of installed AI CLIs & cache results
-  serve, start              Start the local API gateway & web dashboard (default)
-  check, status             Quick CLI status check (reads from cache or system)
-  models                    List all available OpenAI model IDs
-  conversations, convs      List saved multi-turn conversations
-  chat [prompt]             Send a quick prompt via the CLI
-  clear-cache               Remove ~/.agikey/discovery.json cache
-
-OPTIONS:
-  -p, --port <number>       Port to listen on (default: 8000, env: PORT)
-  -h, --host <ip>           Host to bind to (default: 127.0.0.1, env: HOST)
-  -k, --key <string>        Require Bearer API key (optional, env: AGIKEY_API_KEY)
-  -m, --model <name>        Target model (default: auto)
-  -c, --conversation <id>   Continue an existing persistent conversation thread
-  --refresh                 Bypass cache and force fresh scan
-  --json                    Output results as JSON
-  --debug                   Enable verbose debug logging
-```
-
----
-
-## Connecting Clients to the Local API
-
-### Python (`openai` package)
+### Python
 
 ```python
 from openai import OpenAI
 
-client = OpenAI(
-    base_url="http://127.0.0.1:8000/v1",
-    api_key="agikey"  # any placeholder key
-)
-
-# 1. Non-Streaming Chat Completion
+client = OpenAI(base_url="http://127.0.0.1:8000/v1", api_key="local")
 response = client.chat.completions.create(
-    model="agy",  # or "claude", "grok", "codex", "gemini-3.8-flash-high"
-    messages=[
-        {"role": "system", "content": "You are a concise coding assistant."},
-        {"role": "user", "content": "Write an async sleep function in Python."}
-    ],
-    stream=False
+    model="agy",
+    messages=[{"role": "user", "content": "Say hello."}],
 )
 print(response.choices[0].message.content)
-
-# 2. Real-Time Streaming
-stream = client.chat.completions.create(
-    model="agy",
-    messages=[{"role": "user", "content": "Explain merge sort."}],
-    stream=True
-)
-for chunk in stream:
-    if chunk.choices[0].delta.content:
-        print(chunk.choices[0].delta.content, end="", flush=True)
 ```
 
-### Node.js / TypeScript (`openai` package)
+### JavaScript / streaming
 
-```typescript
+```js
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+const client = new OpenAI({
   baseURL: 'http://127.0.0.1:8000/v1',
-  apiKey: 'agikey',
+  apiKey: 'local',
 });
-
-// Streaming chat completion
-const stream = await openai.chat.completions.create({
+const stream = await client.chat.completions.create({
   model: 'agy',
-  messages: [{ role: 'user', content: 'Say hello in 3 languages.' }],
+  messages: [{ role: 'user', content: 'Say hello.' }],
   stream: true,
 });
-
 for await (const chunk of stream) {
   process.stdout.write(chunk.choices[0]?.delta?.content || '');
 }
 ```
 
-### cURL
+If a server key is configured, replace `local` with that key.
 
-```bash
-# Real-time SSE Streaming
+```sh
 curl -N http://127.0.0.1:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "agy",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
-  }'
+  -H 'Content-Type: application/json' \
+  -d '{"model":"agy","messages":[{"role":"user","content":"Hello"}],"stream":true}'
+```
 
-# Non-Streaming Sync
+## Compatibility
+
+This is a **text generation compatibility layer**, not a complete implementation of the OpenAI API. Clients must use Chat Completions or legacy Completions, not the Responses API.
+
+| Surface | Behavior |
+| --- | --- |
+| `GET /v1/models` | Installed provider aliases and discovery model catalog; catalog entries do not guarantee account access |
+| `POST /v1/chat/completions` | Text `messages`, `model`, `stream`; user, assistant, system, developer roles |
+| `POST /v1/completions` | One string `prompt`, `model`, `stream`; prompt arrays/batches are rejected |
+| Streaming | SSE with `[DONE]`; provider errors appear as `error` events; chunk granularity depends on CLI events |
+| `reasoning_effort` | `low`, `medium`, `high` mapped to provider flags/config; actual model support varies |
+| `response_format` | `json_object` / `json_schema` passed to agy, Claude and Grok flags; not supported by the Codex adapter; not independently schema-validated by Agikey |
+| Usage | CLI-reported counts when available; otherwise estimated at approximately four characters per token; not billing-grade |
+| Unsupported | Responses API, embeddings, images/audio, tool-call protocol, batches, sampling controls, token limits |
+
+`temperature`, `top_p`, `max_tokens`, `max_completion_tokens`, `tools`, `tool_choice`, `n`, `stop`, `seed`, `logprobs`, and frequency/presence penalties are rejected with HTTP 400 rather than silently ignored.
+
+Use `agy`, `claude`, `grok`, `codex` (or `chatgpt`) to select a provider default. Use `provider/model-id` to request a specific model. Bare known model IDs are supported; unknown IDs are rejected. Claude uses its `sonnet` alias. Codex uses the configured local model. Model availability is controlled by the upstream service.
+
+System and developer instructions are passed through the CLI prompt interface; role hierarchy and tokenization are not identical to the OpenAI service. Claude and Grok get separate system instructions. Other adapters include instructions in the text prompt.
+
+### Live verification (September 16, 2026)
+
+| Provider | Installed version | JSON / SSE result |
+| --- | --- | --- |
+| agy | 1.2.4 | Both passed; exact `AGIKEY_OK` response |
+| Claude Code | 2.1.199 | Both blocked by provider credit balance |
+| Grok | 1.0.25 | Not run: authentication required |
+| Codex | 0.149.1 | Both blocked: configured model requires a newer CLI |
+
+All four adapters have isolated event/parser tests. That is separate from live provider verification. Structured-output and reasoning controls still need live validation before being advertised as verified.
+
+## Commands and configuration
+
+```text
+agikey discover                 Scan providers and save discovery cache
+agikey check [--refresh]         Inspect discovery (cached by default)
+agikey models                   List discovered model IDs
+agikey serve                    Start API + dashboard (default command)
+agikey chat -m agy "Hello"       Make a provider request directly
+agikey chat -c my-thread "Hello" Save/continue local conversation text
+agikey conversations            List saved conversations
+agikey clear-cache              Remove discovery cache
+agikey --help                   Show command help
+```
+
+| Option / environment | Default |
+| --- | --- |
+| `--port`, `-p` / `PORT` | `8000` |
+| `--host` / `HOST` | `127.0.0.1` (`-h` means help) |
+| `--key`, `-k` / `AGIKEY_API_KEY` | No key on loopback; legacy `AGIARY_API_KEY` also accepted |
+| `AGIKEY_HOME` | `~/.agikey` (cache and conversations) |
+| `--json` | JSON output for discover/check/conversations |
+| `--debug` | Diagnostic logging |
+
+Discovery cache expires after 24 hours. `agikey discover` or the dashboard's rescan refreshes it. Server startup uses the cache when available.
+
+## Conversations
+
+Conversation APIs are Agikey extensions, not standard OpenAI endpoints. Saved text is replayed on each turn; these are not native provider sessions. Send only **new** messages with `conversation_id`, otherwise you will duplicate history. Simultaneous turns or edits to a running conversation return HTTP 409 within one server process.
+
+```sh
 curl http://127.0.0.1:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "agy",
-    "messages": [{"role": "user", "content": "What is 2+2?"}],
-    "stream": false
-  }'
+  -H 'Content-Type: application/json' \
+  -d '{"model":"agy","conversation_id":"my-thread","messages":[{"role":"user","content":"Remember the word cedar."}]}'
 
-# Text / Legacy Completions Mode
-curl http://127.0.0.1:8000/v1/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "agy",
-    "prompt": "Complete this poem: Roses are red, violets are",
-    "stream": false
-  }'
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"conversation_id":"my-thread","messages":[{"role":"user","content":"What was the word?"}]}'
 ```
 
-### Continue.dev / Cursor IDE Configuration
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET / POST | `/v1/conversations` | List / create |
+| GET / PATCH / DELETE | `/v1/conversations/:id` | Read / update title, metadata, model / delete |
+| GET / POST | `/v1/conversations/:id/messages` | Read / submit a user turn with `{ "content": "Hello", "stream": true }` |
 
-Add to your Continue `config.json` or Cursor custom OpenAI model configuration:
+`/api/v1/conversations` is an alias. IDs allow 1–128 letters, numbers, underscores, or hyphens. Creating an existing ID returns 409. History remains on disk until deleted. A failed generation can leave the submitted user message in history, but does not save partial output as a completed assistant turn. Retrying the same message can therefore duplicate it.
 
-```json
-{
-  "models": [
-    {
-      "title": "Agikey Local Agent",
-      "provider": "openai",
-      "model": "agy",
-      "apiBase": "http://127.0.0.1:8000/v1",
-      "apiKey": "agikey"
-    }
-  ]
-}
+## Local access and process behavior
+
+The server binds to loopback by default. All `/api/*` and `/v1/*` routes require a Bearer token when a key is configured; `/health` and dashboard assets remain public. Enter the key in the dashboard's **Server API key** field; it stays in page memory. Cross-origin browser requests and unexpected loopback Host headers are rejected.
+
+```sh
+AGIKEY_API_KEY='choose-a-long-random-secret' agikey serve
 ```
 
----
+Binding beyond loopback requires a key. This is a local development tool, not an internet-facing multi-user service: no TLS termination, per-user storage, rate limiting, or tenant isolation is provided. Keep access limited to trusted clients. Provider processes inherit the environment and working directory. Claude/Grok are launched with tools disabled; Codex uses a read-only sandbox. Provider configuration still applies; Agikey itself is not an OS sandbox.
 
-## Persistent Conversations & Sessions
+Requests are limited to 1 MiB. Provider execution times out after five minutes and is terminated on client disconnect. Conversations use private file permissions and atomic replacement. Use one gateway process per data directory.
 
-Agikey supports persistent multi-turn conversational threads stored locally under `~/.agikey/conversations/`. This enables maintaining context across turns regardless of which CLI agent handles them:
+## Development and checks
 
-### Endpoints:
-- `GET /v1/conversations` (or `/api/v1/conversations`): List all saved conversations.
-- `POST /v1/conversations`: Create a new conversation thread.
-- `GET /v1/conversations/:id`: Retrieve conversation details and turn history.
-- `PATCH /v1/conversations/:id`: Update title or metadata.
-- `DELETE /v1/conversations/:id`: Delete a conversation thread.
-- `GET /v1/conversations/:id/messages`: Get messages for a thread.
-- `POST /v1/conversations/:id/messages`: Append user message and run agent turn (supports streaming SSE or sync JSON).
-
-### Session Continuity via OpenAI Chat Completions:
-Pass `"conversation_id"` in `POST /v1/chat/completions` to automatically persist the turn and build on earlier history:
-
-```bash
-curl -N http://127.0.0.1:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "agy",
-    "conversation_id": "conv-a1b2c3d4",
-    "messages": [{"role": "user", "content": "How do I optimize this function?"}],
-    "stream": true
-  }'
+```sh
+npm test                 # Isolated fixtures; no accounts, quota or user cache
+npm run test:live         # Explicit opt-in: calls installed authenticated providers
+npm run test:live -- agy  # Limit live calls to one provider
+npm run release:check     # Tests + tarball contents + clean local install smoke
+npm run site:preview      # Website at http://127.0.0.1:4173
 ```
 
-Or directly in the CLI:
-```bash
-agikey chat -c conv-a1b2c3d4 "Continue refactoring"
-agikey convs
-```
+Live tests may use provider quota. They run temporary storage and report failures separately from skipped providers. See [launch status](docs/LAUNCH.md), [release procedure](docs/RELEASING.md), and [contributing](CONTRIBUTING.md).
 
----
-
-## Claude Desktop vs Claude Code CLI Note
-
-If your Claude Code CLI reports:
-> `Credit balance is too low`
-
-This occurs because:
-1. **Claude Desktop** uses your consumer subscription (**Claude Pro** or **Claude Max**) via browser/app authentication.
-2. **Claude Code CLI** connects by default to Anthropic's developer API console credits (`ANTHROPIC_API_KEY` or console login). If that developer prepaid balance is \$0, the Anthropic server returns `Credit balance is too low`.
-3. To link your Claude Pro/Max subscription directly to Claude Code CLI, Anthropic provides:
-   ```bash
-   claude setup-token
-   ```
-4. Alternatively, you can use **agy** in Agikey right away: `agy` is fully active on your system and provides access to Gemini 3.8 and Claude Sonnet/Opus models!
-
----
-
-## Testing
-
-Agikey includes a comprehensive automated test suite testing the CLI detector, discovery caching, messages conversion, SSE formatting, and live server endpoints (`/v1/models`, `/v1/chat/completions`, `/v1/completions` in both streaming and sync modes):
-
-```bash
-npm test
-```
-
----
+The marketing site is static HTML/CSS/JavaScript under `website/`, with existing Vercel configuration. It does not run the gateway or make requests to local agents. The runtime dashboard is under `public/` and ships in the npm package.
 
 ## License
 
-MIT
+[MIT](LICENSE). Independent community project; not affiliated with the CLI providers.

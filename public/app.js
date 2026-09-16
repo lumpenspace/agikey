@@ -1,3 +1,21 @@
+// Keep the key in memory for this page only.
+let dashboardKey = '';
+async function apiFetch(url, options = {}) {
+  const headers = new Headers(options.headers);
+  if (dashboardKey) headers.set('Authorization', `Bearer ${dashboardKey}`);
+  const response = await fetch(url, { ...options, headers });
+  if (response.status === 401) {
+    document.getElementById('auth-status').textContent = 'API key required. Enter the key configured for this server.';
+  }
+  return response;
+}
+document.getElementById('api-key-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  dashboardKey = document.getElementById('dashboard-key').value;
+  const response = await apiFetch('/api/status');
+  document.getElementById('auth-status').textContent = response.ok ? 'Connected' : 'Incorrect API key';
+  if (response.ok) { loadStatus(); loadConversations(); }
+});
 // Theme Management (following modern web guidance)
 const themeBtn = document.getElementById('theme-toggle');
 function initTheme() {
@@ -43,6 +61,7 @@ tabButtons.forEach(btn => {
 
 function activateTabFromHash() {
   const hash = window.location.hash.replace('#', '');
+  if (hash && !['providers', 'playground', 'conversations', 'docs', 'logs'].includes(hash)) return;
   if (hash) {
     const tabBtn = document.querySelector(`.nav-tab[data-tab="${hash}"]`);
     if (tabBtn) tabBtn.click();
@@ -58,7 +77,7 @@ window.addEventListener('hashchange', activateTabFromHash);
 // Endpoint Copy Button
 const copyEndpointBtn = document.getElementById('copy-endpoint-btn');
 copyEndpointBtn.addEventListener('click', () => {
-  navigator.clipboard.writeText('http://127.0.0.1:8000/v1');
+  navigator.clipboard.writeText(`${location.origin}/v1`);
   copyEndpointBtn.style.color = 'var(--brand-success)';
   setTimeout(() => {
     copyEndpointBtn.style.color = '';
@@ -79,13 +98,16 @@ document.querySelectorAll('.copy-code-btn').forEach(btn => {
   });
 });
 
+document.querySelector('.endpoint-badge code').textContent = `${location.origin}/v1`;
+
 // Providers State
 let providersData = [];
 let modelsData = [];
 
 async function loadStatus() {
   try {
-    const res = await fetch('/api/status');
+    const res = await apiFetch('/api/status');
+    if (!res.ok) return;
     const data = await res.json();
     providersData = data.providers || [];
     renderProviders(providersData);
@@ -126,8 +148,8 @@ function renderProviders(providers) {
     const modelsCount = p.models ? p.models.length : 0;
     const topModel = p.models && p.models[0] ? p.models[0].id : '';
 
-    const reasoningSupport = p.id === 'agy' ? '✓ low|med|high' : (p.id === 'grok' || p.id === 'codex' ? '✓ Supported' : '—');
-    const schemaSupport = p.capabilities && p.capabilities.jsonSchema ? '✓ Supported' : (p.id === 'claude' || p.id === 'agy' || p.id === 'grok' || p.id === 'codex' ? '✓ Supported' : '—');
+    const reasoningSupport = p.capabilities?.reasoningEffort ? '✓ low|med|high' : '—';
+    const schemaSupport = p.capabilities?.jsonMode ? '✓ CLI flag' : '—';
 
     tr.innerHTML = `
       <td>
@@ -171,7 +193,7 @@ function renderProviders(providers) {
 
 async function loadModels() {
   try {
-    const res = await fetch('/v1/models');
+    const res = await apiFetch('/v1/models');
     const json = await res.json();
     modelsData = json.data || [];
 
@@ -212,7 +234,7 @@ document.getElementById('refresh-providers-btn').addEventListener('click', async
   btn.disabled = true;
   btn.innerHTML = 'Scanning...';
   try {
-    const res = await fetch('/api/check', { method: 'POST' });
+    const res = await apiFetch('/api/check', { method: 'POST' });
     const data = await res.json();
     providersData = data.providers || [];
     renderProviders(providersData);
@@ -243,8 +265,10 @@ const modelSelect = document.getElementById('model-select');
 const streamToggle = document.getElementById('stream-toggle');
 const reasoningSelect = document.getElementById('reasoning-effort-select');
 const tempInput = document.getElementById('temperature-input');
+tempInput.closest('.form-group').hidden = true;
 const tempVal = document.getElementById('temp-val');
 const maxTokensInput = document.getElementById('max-tokens-input');
+maxTokensInput.closest('.form-group').hidden = true;
 const systemPromptInput = document.getElementById('system-prompt-input');
 const promptInput = document.getElementById('prompt-input');
 const sendBtn = document.getElementById('send-btn');
@@ -358,12 +382,13 @@ async function sendMessage() {
       // Auto-create thread if none selected
       if (!convId) {
         const titleSnippet = text.length > 36 ? text.slice(0, 36) + '...' : text;
-        const createRes = await fetch('/v1/conversations', {
+        const createRes = await apiFetch('/v1/conversations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: titleSnippet,
             model: model,
+            ...(systemPrompt && { messages: [{ role: 'system', content: systemPrompt }] }),
           }),
         });
         if (!createRes.ok) {
@@ -389,8 +414,6 @@ async function sendMessage() {
         content: text,
         stream: isStream,
         model,
-        temperature,
-        ...(maxTokens && { max_tokens: maxTokens }),
         ...(reasoning && { reasoning_effort: reasoning }),
       };
 
@@ -422,9 +445,6 @@ async function sendMessage() {
         model,
         messages,
         stream: isStream,
-        temperature,
-        ...(convId && { conversation_id: convId }),
-        ...(maxTokens && { max_tokens: maxTokens }),
         ...(reasoning && { reasoning_effort: reasoning }),
       };
 
@@ -440,8 +460,6 @@ async function sendMessage() {
         model,
         prompt: text,
         stream: isStream,
-        temperature,
-        ...(maxTokens && { max_tokens: maxTokens }),
       };
 
       if (isStream) {
@@ -465,7 +483,7 @@ async function sendMessage() {
 }
 
 async function handleStreamingResponse(endpoint, payload, contentEl, cursor, startTime) {
-  const res = await fetch(endpoint, {
+  const res = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -516,7 +534,7 @@ async function handleStreamingResponse(endpoint, payload, contentEl, cursor, sta
           }
         } catch (e) {
           if (e.message !== 'Unexpected end of JSON input') {
-            console.warn('SSE parse error:', e, jsonStr);
+            throw e;
           }
         }
       }
@@ -530,7 +548,7 @@ async function handleStreamingResponse(endpoint, payload, contentEl, cursor, sta
 }
 
 async function handleSyncChatResponse(endpoint, payload, contentEl, cursor, startTime) {
-  const res = await fetch(endpoint, {
+  const res = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -554,7 +572,7 @@ async function handleSyncChatResponse(endpoint, payload, contentEl, cursor, star
 }
 
 async function handleStreamingTextResponse(endpoint, payload, contentEl, cursor, startTime) {
-  const res = await fetch(endpoint, {
+  const res = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -584,6 +602,7 @@ async function handleStreamingTextResponse(endpoint, payload, contentEl, cursor,
       if (trimmed.startsWith('data: ')) {
         try {
           const parsed = JSON.parse(trimmed.slice(6));
+          if (parsed.error) throw new Error(parsed.error.message);
           const text = parsed.choices?.[0]?.text || '';
           if (text) {
             accumulated += text;
@@ -591,7 +610,7 @@ async function handleStreamingTextResponse(endpoint, payload, contentEl, cursor,
             contentEl.appendChild(cursor);
             chatHistory.scrollTop = chatHistory.scrollHeight;
           }
-        } catch {}
+        } catch (error) { throw error; }
       }
     }
   }
@@ -600,7 +619,7 @@ async function handleStreamingTextResponse(endpoint, payload, contentEl, cursor,
 }
 
 async function handleSyncTextResponse(endpoint, payload, contentEl, cursor, startTime) {
-  const res = await fetch(endpoint, {
+  const res = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -652,7 +671,7 @@ function escapeHtml(str) {
 async function loadLogs() {
   const tbody = document.getElementById('logs-tbody');
   try {
-    const res = await fetch('/api/logs');
+    const res = await apiFetch('/api/logs');
     const data = await res.json();
     const logs = data.logs || [];
 
@@ -700,7 +719,7 @@ const convsTbody = document.getElementById('conversations-tbody');
 
 async function loadConversations() {
   try {
-    const res = await fetch('/v1/conversations');
+    const res = await apiFetch('/v1/conversations');
     const data = await res.json();
     const convs = data.data || [];
     renderConversationsTable(convs);
@@ -791,7 +810,7 @@ function renderConversationsTable(convs) {
 
 async function resumeConversationInPlayground(convId) {
   try {
-    const res = await fetch(`/v1/conversations/${convId}`);
+    const res = await apiFetch(`/v1/conversations/${convId}`);
     if (!res.ok) throw new Error('Conversation not found');
     const conv = await res.json();
 
@@ -855,7 +874,7 @@ async function handleDeleteConversation(convId) {
   if (!confirm(`Are you sure you want to delete conversation ${convId}?`)) return;
 
   try {
-    const res = await fetch(`/v1/conversations/${convId}`, { method: 'DELETE' });
+    const res = await apiFetch(`/v1/conversations/${convId}`, { method: 'DELETE' });
     if (res.ok) {
       if (convSessionSelect && convSessionSelect.value === convId) {
         startNewConversation();

@@ -4,9 +4,9 @@ import os from 'node:os';
 import { logger } from './utils/logger.js';
 
 export function getCacheDir() {
-  const dir = path.join(os.homedir(), '.agikey');
+  const dir = process.env.AGIKEY_HOME || path.join(os.homedir(), '.agikey');
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
   return dir;
 }
@@ -19,7 +19,8 @@ export function saveDiscoveryCache(data) {
   try {
     const filePath = getCacheFilePath();
     const payload = {
-      version: '1.0.0',
+      version: '1.0.1',
+      schemaVersion: 2,
       savedAt: new Date().toISOString(),
       ...data,
     };
@@ -39,6 +40,7 @@ export function loadDiscoveryCache(maxAgeMs = 24 * 60 * 60 * 1000) {
 
     const raw = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(raw);
+    if (data.schemaVersion !== 2) return null;
 
     if (maxAgeMs && data.savedAt) {
       const age = Date.now() - new Date(data.savedAt).getTime();

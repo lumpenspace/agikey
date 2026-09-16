@@ -22,7 +22,12 @@ export function createMessageId() {
 
 function sanitizeId(id) {
   if (!id || typeof id !== 'string') return null;
-  return id.replace(/[^a-zA-Z0-9_-]/g, '');
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) {
+    const error = new Error('Conversation ID must contain 1–128 letters, numbers, underscores or hyphens');
+    error.statusCode = 400;
+    throw error;
+  }
+  return id;
 }
 
 export function listConversations({ limit = 50, offset = 0 } = {}) {
@@ -90,6 +95,11 @@ export function createConversation({
   metadata = {},
 } = {}) {
   const convId = sanitizeId(id) || createConversationId();
+  if (getConversation(convId)) {
+    const error = new Error('Conversation already exists');
+    error.statusCode = 409;
+    throw error;
+  }
   const now = Math.floor(Date.now() / 1000);
 
   const formattedMessages = messages.map(m => ({
@@ -122,7 +132,7 @@ export function createConversation({
 
   try {
     const filePath = path.join(getConversationsDir(), `${convId}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(conversation, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify(conversation, null, 2), { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     logger.info(`Conversation created: ${convId} ("${autoTitle}")`);
     return conversation;
   } catch (err) {
@@ -154,7 +164,9 @@ export function addMessageToConversation(id, message) {
 
   try {
     const filePath = path.join(getConversationsDir(), `${conv.id}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(conv, null, 2), 'utf8');
+    const temporary = `${filePath}.${crypto.randomUUID()}.tmp`;
+    fs.writeFileSync(temporary, JSON.stringify(conv, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(temporary, filePath);
     return { message: newMsg, conversation: conv };
   } catch (err) {
     logger.error(`Failed adding message to conversation ${conv.id}: ${err.message}`);
@@ -173,7 +185,9 @@ export function updateConversation(id, { title = null, metadata = null, model = 
 
   try {
     const filePath = path.join(getConversationsDir(), `${conv.id}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(conv, null, 2), 'utf8');
+    const temporary = `${filePath}.${crypto.randomUUID()}.tmp`;
+    fs.writeFileSync(temporary, JSON.stringify(conv, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(temporary, filePath);
     return conv;
   } catch (err) {
     logger.error(`Failed updating conversation ${conv.id}: ${err.message}`);

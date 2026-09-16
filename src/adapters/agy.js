@@ -1,5 +1,4 @@
-import { spawn } from 'node:child_process';
-import readline from 'node:readline';
+import { runProcess } from './process.js';
 import { BaseAdapter } from './base.js';
 import { parseMessages } from '../utils/messages.js';
 import { logger } from '../utils/logger.js';
@@ -55,117 +54,17 @@ export class AgyAdapter extends BaseAdapter {
       }
     }
 
-    logger.debug(`Spawning agy: ${this.binaryPath} ${args.filter((_, i) => i < 6).join(' ')}...`);
+    logger.debug('Spawning agy provider');
 
-    return new Promise((resolve, reject) => {
-      let accumulatedText = '';
-      let stderrText = '';
-      let usageInfo = {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0,
-      };
-
-      const child = spawn(this.binaryPath, args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env },
-      });
-
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          try {
-            child.kill('SIGTERM');
-          } catch {}
-          reject(new Error('Request aborted by client'));
-        });
-      }
-
-      child.stderr.on('data', chunk => {
-        stderrText += chunk.toString();
-      });
-
-      const rl = readline.createInterface({
-        input: child.stdout,
-        crlfDelay: Infinity,
-      });
-
-      rl.on('line', line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-
-        try {
-          const event = JSON.parse(trimmed);
-
-          if (event.event === 'step_update' && event.step_update) {
-            const delta = event.step_update.text_delta;
-            if (delta) {
-              accumulatedText += delta;
-              if (onDelta) {
-                onDelta(delta);
-              }
-            }
-            if (event.step_update.usage) {
-              const u = event.step_update.usage;
-              usageInfo = {
-                prompt_tokens: u.input_tokens || 0,
-                completion_tokens: u.output_tokens || 0,
-                total_tokens: u.total_tokens || 0,
-              };
-            }
-          } else if (event.event === 'result' && event.result) {
-            if (event.result.status === 'ERROR') {
-              reject(new Error(event.result.error || 'agy returned an error'));
-              return;
-            }
-            if (event.result.response && !accumulatedText) {
-              accumulatedText = event.result.response;
-              if (onDelta) onDelta(accumulatedText);
-            }
-            if (event.result.usage) {
-              const u = event.result.usage;
-              usageInfo = {
-                prompt_tokens: u.input_tokens || 0,
-                completion_tokens: u.output_tokens || 0,
-                total_tokens: u.total_tokens || 0,
-              };
-            }
-          }
-        } catch {
-          // Non-JSON line fallback
-          if (!trimmed.startsWith('{')) {
-            accumulatedText += trimmed + '\n';
-            if (onDelta) onDelta(trimmed + '\n');
-          }
+    return runProcess(this.binaryPath, args, {
+      signal, onDelta, prompt: finalPrompt, cwd: this.providerInfo.cwd,
+      parseEvent(event, content) {
+        if (event.event === 'result') {
+          if (event.result?.status === 'ERROR') return { error: event.result.error || 'agy returned an error' };
+          return { text: content ? '' : event.result?.response, usage: event.result?.usage };
         }
-      });
-
-      child.on('error', err => {
-        reject(new Error(`Failed to spawn agy process: ${err.message}`));
-      });
-
-      child.on('close', code => {
-        if (code !== 0 && !accumulatedText) {
-          const msg = stderrText.trim() || `agy exited with code ${code}`;
-          reject(new Error(msg));
-          return;
-        }
-
-        // Estimate tokens if usage is 0
-        if (usageInfo.total_tokens === 0) {
-          const compTokens = Math.ceil(accumulatedText.length / 4);
-          const promptTokens = Math.ceil(finalPrompt.length / 4);
-          usageInfo = {
-            prompt_tokens: promptTokens,
-            completion_tokens: compTokens,
-            total_tokens: promptTokens + compTokens,
-          };
-        }
-
-        resolve({
-          content: accumulatedText.trim(),
-          usage: usageInfo,
-        });
-      });
+        if (event.event === 'step_update') return { text: event.step_update?.text_delta, usage: event.step_update?.usage };
+      },
     });
   }
 }

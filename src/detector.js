@@ -135,7 +135,7 @@ export async function detectClaude(customPath = null) {
       version: null,
       status: 'not_found',
       statusMessage: 'claude executable not found in PATH',
-      defaultModel: 'claude-3-7-sonnet',
+      defaultModel: 'sonnet',
       models: [
         { id: 'claude-3-7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'claude' },
         { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'claude' },
@@ -143,7 +143,7 @@ export async function detectClaude(customPath = null) {
       capabilities: {
         streaming: true,
         jsonMode: true,
-        reasoningEffort: false,
+        reasoningEffort: true,
         systemPrompt: true,
       },
     };
@@ -155,25 +155,22 @@ export async function detectClaude(customPath = null) {
     version = stdout.trim().split('\n')[0];
   } catch {}
 
-  let status = 'ready';
-  let statusMessage = 'Installed';
+  let status = 'unknown';
+  let statusMessage = 'Installed; authentication not verified';
   let accountInfo = null;
 
   try {
     const { stdout } = await execFileAsync(binaryPath, ['auth', 'status'], { timeout: 4000 });
     const authData = JSON.parse(stdout.trim());
-    accountInfo = authData;
+    accountInfo = { loggedIn: Boolean(authData.loggedIn), authMethod: authData.authMethod };
+    status = authData.loggedIn ? 'ready' : 'needs_auth';
+    statusMessage = authData.loggedIn ? 'Authenticated; generation not yet verified' : 'Run claude auth login';
     if (authData.email) {
-      statusMessage = `Logged in as ${authData.email}`;
+      statusMessage = 'Authenticated; generation not yet verified';
     }
   } catch {}
 
-  const models = [
-    { id: 'claude-3-7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'claude' },
-    { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'claude' },
-    { id: 'claude-3-5-haiku', name: 'Claude 3.5 Haiku', provider: 'claude' },
-    { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'claude' },
-  ];
+  const models = ['sonnet', 'opus', 'haiku'].map(id => ({ id, name: id, provider: 'claude' }));
 
   return {
     id: 'claude',
@@ -184,12 +181,12 @@ export async function detectClaude(customPath = null) {
     status,
     statusMessage,
     accountInfo,
-    defaultModel: 'claude-3-7-sonnet',
+    defaultModel: 'sonnet',
     models,
     capabilities: {
       streaming: true,
       jsonMode: true,
-      reasoningEffort: false,
+      reasoningEffort: true,
       systemPrompt: true,
     },
   };
@@ -300,7 +297,7 @@ export async function detectCodex(customPath = null) {
       ],
       capabilities: {
         streaming: true,
-        jsonMode: true,
+        jsonMode: false,
         reasoningEffort: true,
         systemPrompt: true,
       },
@@ -314,9 +311,10 @@ export async function detectCodex(customPath = null) {
   } catch {}
 
   let status = 'ready';
-  let statusMessage = 'Configured with ChatGPT account';
+  let statusMessage = 'Installed; authentication and generation not verified';
+  status = 'unknown';
 
-  let configuredModel = 'gpt-4o';
+  let configuredModel = 'default';
   try {
     const configPath = path.join(os.homedir(), '.codex', 'config.toml');
     if (fs.existsSync(configPath)) {
@@ -326,12 +324,7 @@ export async function detectCodex(customPath = null) {
     }
   } catch {}
 
-  const models = [
-    { id: configuredModel, name: `${configuredModel} (default)`, provider: 'codex' },
-    { id: 'o3-mini', name: 'o3-mini', provider: 'codex' },
-    { id: 'o3', name: 'o3', provider: 'codex' },
-    { id: 'gpt-4o', name: 'GPT-4o', provider: 'codex' },
-  ];
+  const models = configuredModel === 'default' ? [] : [{ id: configuredModel, name: `${configuredModel} (configured)`, provider: 'codex' }];
 
   return {
     id: 'codex',
@@ -345,7 +338,7 @@ export async function detectCodex(customPath = null) {
     models,
     capabilities: {
       streaming: true,
-      jsonMode: true,
+      jsonMode: false,
       reasoningEffort: true,
       systemPrompt: true,
     },
@@ -436,8 +429,7 @@ export class Detector {
   getAvailableModels({ all = false } = {}) {
     const list = [];
     const providersToScan = Array.from(this.providers.values());
-    const anyInstalled = providersToScan.some(p => p.installed);
-    const filterInstalled = !all && anyInstalled;
+    const filterInstalled = !all;
 
     for (const provider of providersToScan) {
       if (filterInstalled && !provider.installed) continue;
@@ -498,6 +490,12 @@ export class Detector {
   }
 
   resolveModelTarget(modelName) {
+    const target = this._resolveModelTarget(modelName);
+    if (!target.provider?.installed) throw new Error(`Provider for '${modelName}' is not installed`);
+    return target;
+  }
+
+  _resolveModelTarget(modelName) {
     if (!modelName || modelName === 'default' || modelName === 'auto') {
       const readyProvider = this.getAllProviders().find(p => p.installed && p.status === 'ready')
         || this.getAllProviders().find(p => p.installed);
@@ -535,9 +533,7 @@ export class Detector {
     if (lower.startsWith('grok')) return { provider: this.getProvider('grok'), model: modelName };
     if (lower.startsWith('gpt') || lower.startsWith('o3')) return { provider: this.getProvider('codex'), model: modelName };
 
-    const fallback = this.getAllProviders().find(p => p.installed);
-    if (!fallback) throw new Error(`No AI CLI providers installed to handle model '${modelName}'`);
-    return { provider: fallback, model: modelName };
+    throw new Error(`Unknown model '${modelName}'. Use a provider alias or provider/model ID.`);
   }
 }
 

@@ -1,5 +1,4 @@
-import { spawn } from 'node:child_process';
-import readline from 'node:readline';
+import { runProcess } from './process.js';
 import { BaseAdapter } from './base.js';
 import { parseMessages } from '../utils/messages.js';
 import { logger } from '../utils/logger.js';
@@ -34,7 +33,7 @@ export class CodexAdapter extends BaseAdapter {
       'exec',
       '--skip-git-repo-check',
       '--ephemeral',
-      '--json',
+      '--json', '--sandbox', 'read-only',
     ];
 
     if (model && model !== 'codex' && model !== 'chatgpt' && model !== 'default') {
@@ -42,122 +41,20 @@ export class CodexAdapter extends BaseAdapter {
       args.push('-m', cleanModel);
     }
 
-    args.push(finalPrompt);
+    if (reasoningEffort) args.push('-c', `model_reasoning_effort=${JSON.stringify(reasoningEffort)}`);
+    if (responseFormat) throw Object.assign(new Error('response_format is not supported by the Codex adapter'), { statusCode: 400 });
+    args.push('--', finalPrompt);
 
-    logger.debug(`Spawning codex: ${this.binaryPath} ${args.filter((_, i) => i < 6).join(' ')}...`);
+    logger.debug('Spawning codex provider');
 
-    return new Promise((resolve, reject) => {
-      let accumulatedText = '';
-      let stderrText = '';
-      let usageInfo = {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0,
-      };
-
-      const child = spawn(this.binaryPath, args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env },
-      });
-
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          try {
-            child.kill('SIGTERM');
-          } catch {}
-          reject(new Error('Request aborted by client'));
-        });
-      }
-
-      child.stderr.on('data', chunk => {
-        stderrText += chunk.toString();
-      });
-
-      const rl = readline.createInterface({
-        input: child.stdout,
-        crlfDelay: Infinity,
-      });
-
-      rl.on('line', line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-
-        try {
-          const event = JSON.parse(trimmed);
-
-          if (event.type === 'item.completed' && event.item) {
-            if (event.item.type === 'message' || event.item.role === 'assistant') {
-              const text = event.item.text || event.item.content || '';
-              if (text) {
-                accumulatedText += text;
-                if (onDelta) onDelta(text);
-              }
-            } else if (event.item.type === 'agent_message' || event.item.type === 'assistant') {
-              const text = event.item.text || '';
-              if (text) {
-                accumulatedText += text;
-                if (onDelta) onDelta(text);
-              }
-            }
-          } else if (event.type === 'turn.delta' && event.delta) {
-            const text = event.delta.text || event.delta.content || '';
-            if (text) {
-              accumulatedText += text;
-              if (onDelta) onDelta(text);
-            }
-          } else if (event.type === 'error' || event.type === 'turn.failed') {
-            const errMsg = event.message || event.error?.message || '';
-            if (errMsg.includes('requires a newer version') || errMsg.includes('not supported')) {
-              try {
-                const parsedErr = JSON.parse(errMsg);
-                if (parsedErr.error?.message) {
-                  reject(new Error(parsedErr.error.message));
-                  return;
-                }
-              } catch {}
-            }
-          }
-          if (event.usage) {
-            usageInfo = {
-              prompt_tokens: event.usage.input_tokens || event.usage.prompt_tokens || 0,
-              completion_tokens: event.usage.output_tokens || event.usage.completion_tokens || 0,
-              total_tokens: event.usage.total_tokens || 0,
-            };
-          }
-        } catch {
-          if (!trimmed.startsWith('{') && !trimmed.startsWith('Reading')) {
-            accumulatedText += trimmed + '\n';
-            if (onDelta) onDelta(trimmed + '\n');
-          }
-        }
-      });
-
-      child.on('error', err => {
-        reject(new Error(`Failed to spawn codex process: ${err.message}`));
-      });
-
-      child.on('close', code => {
-        if (code !== 0 && !accumulatedText) {
-          const combined = `${stderrText}\n${accumulatedText}`.trim();
-          reject(new Error(combined || `Codex exited with code ${code}`));
-          return;
-        }
-
-        if (usageInfo.total_tokens === 0) {
-          const compTokens = Math.ceil(accumulatedText.length / 4);
-          const promptTokens = Math.ceil(finalPrompt.length / 4);
-          usageInfo = {
-            prompt_tokens: promptTokens,
-            completion_tokens: compTokens,
-            total_tokens: promptTokens + compTokens,
-          };
-        }
-
-        resolve({
-          content: accumulatedText.trim(),
-          usage: usageInfo,
-        });
-      });
+    return runProcess(this.binaryPath, args, {
+      signal, onDelta, prompt: finalPrompt, cwd: this.providerInfo.cwd,
+      parseEvent(event, content) {
+        if (event.type === 'error' || event.type === 'turn.failed') return { error: event.message || event.error?.message || 'Codex turn failed' };
+        if (event.type === 'item.completed' && ['agent_message', 'message', 'assistant'].includes(event.item?.type)) return { text: event.item.text || event.item.content };
+        if (event.type === 'turn.delta') return { text: event.delta?.text || event.delta?.content };
+        return { usage: event.usage };
+      },
     });
   }
 }

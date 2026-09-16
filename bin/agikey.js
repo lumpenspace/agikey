@@ -27,7 +27,7 @@ function printHelp() {
 
 \x1b[1mOPTIONS\x1b[0m
   \x1b[33m-p, --port <number>\x1b[0m         Port to listen on (default: 8000, env: PORT)
-  \x1b[33m-h, --host <ip>\x1b[0m             Host to bind to (default: 127.0.0.1, env: HOST)
+  \x1b[33m--host <ip>\x1b[0m             Host to bind to (default: 127.0.0.1, env: HOST)
   \x1b[33m-k, --key <string>\x1b[0m          Require Bearer API key (optional, env: AGIKEY_API_KEY)
   \x1b[33m-m, --model <name>\x1b[0m          Model to target for chat command (default: auto)
   \x1b[33m-c, --conversation <id>\x1b[0m     Continue a persistent conversation by ID
@@ -135,11 +135,11 @@ async function runDiscover(options = {}) {
     }
 
     if (p.id === 'claude') {
-      console.log(`  \x1b[33mℹ Claude Auth Note:\x1b[0m Claude Code uses Anthropic API credits. If balance is low, link subscription with \`claude setup-token\`.`);
+      console.log(`  \x1b[33mℹ Claude Auth Note:\x1b[0m Check the active Claude Code account and billing configuration with \`claude auth status\`.`);
     } else if (p.id === 'grok' && p.status === 'needs_auth') {
       console.log(`  \x1b[33mℹ Grok Auth Note:\x1b[0m Run \`grok login\` or export \`XAI_API_KEY\` to authenticate.`);
     } else if (p.id === 'agy') {
-      console.log(`  \x1b[32m✓ Ready Note:\x1b[0m Fully authenticated and ready to serve Gemini and Claude models.`);
+      console.log(`  \x1b[32m✓ Ready Note:\x1b[0m Model discovery succeeded; verify generation with a test request.`);
     }
 
     console.log('');
@@ -254,8 +254,8 @@ async function runChat(modelName, promptText, conversationId = null) {
 async function main() {
   const args = process.argv.slice(2);
   let command = 'serve';
-  let port = 8000;
-  let host = '127.0.0.1';
+  let port = Number(process.env.PORT || 8000);
+  let host = process.env.HOST || '127.0.0.1';
   let key = null;
   let model = null;
   let conversationId = null;
@@ -266,6 +266,7 @@ async function main() {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
+    if (command === 'chat' && i > 0 && !arg.startsWith('-')) { promptText = promptText ? `${promptText} ${arg}` : arg; continue; }
     if (arg === 'help' || arg === '--help' || arg === '-h') {
       printHelp();
       return;
@@ -286,7 +287,7 @@ async function main() {
       command = 'serve';
     } else if (arg === '-p' || arg === '--port') {
       port = parseInt(args[++i], 10);
-    } else if (arg === '-h' || arg === '--host') {
+    } else if (arg === '--host') {
       host = args[++i];
     } else if (arg === '-k' || arg === '--key') {
       key = args[++i];
@@ -302,8 +303,13 @@ async function main() {
       debug = true;
     } else if (!arg.startsWith('-') && command === 'chat' && !promptText) {
       promptText = arg;
+    } else {
+      throw new Error(`Unknown command or option: ${arg}`);
     }
   }
+
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port must be an integer from 1 to 65535');
+  if (args.some((arg, i) => ['--key', '-k', '--model', '-m', '--host', '--conversation', '-c', '--port', '-p'].includes(arg) && (!args[i + 1] || args[i + 1].startsWith('--')))) throw new Error('Missing option value');
 
   if (debug) {
     setLogLevel(LogLevel.DEBUG);

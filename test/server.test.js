@@ -1,3 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+const testHome = fs.mkdtempSync(path.join(os.tmpdir(), 'agikey-test-'));
+process.env.AGIKEY_HOME = testHome;
+after(() => fs.rmSync(testHome, { recursive: true, force: true }));
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { detector } from '../src/detector.js';
@@ -108,68 +114,44 @@ describe('Agiary / Agikey Unit Tests', () => {
   });
 });
 
-describe('Detector & Provider Discovery', () => {
-  it('should detect installed CLI agents', async () => {
-    const providers = await detector.refresh({ saveCache: false });
-    assert.ok(providers.length >= 4, 'Should detect 4 CLI providers');
+const providers = ['agy', 'claude', 'grok', 'codex'].map(id => ({
+  id, name: id, installed: true, status: 'ready', defaultModel: 'fixture-model',
+  models: [{ id: 'fixture-model', name: 'Fixture', provider: id }], capabilities: {},
+}));
+for (const p of providers) detector.providers.set(p.id, p);
+const fakeDetector = Object.create(detector);
+fakeDetector.init = async () => providers;
+fakeDetector.refresh = async () => providers;
+const fakeAdapter = () => ({ execute: async ({ onDelta, signal, messages, prompt }) => {
+  await new Promise(resolve => setTimeout(resolve, messages?.at(-1)?.content === 'SLOW' ? 100 : 10));
+  assert.equal(signal.aborted, false, 'Reading the request body must not cancel the response');
+  onDelta?.('VERIFIED');
+  if (prompt === 'FAIL' || messages?.at(-1)?.content === 'FAIL') throw new Error('Fixture provider failure');
+  return { content: 'VERIFIED', usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 } };
+} });
 
-    const agy = detector.getProvider('agy');
-    assert.ok(agy, 'agy provider should exist');
-    // agy can be installed or not depending on runner
-    assert.ok(typeof agy.installed === 'boolean');
-
-    const claude = detector.getProvider('claude');
-    assert.ok(claude, 'claude provider should exist');
-    assert.ok(typeof claude.installed === 'boolean');
-
-    const grok = detector.getProvider('grok');
-    assert.ok(grok, 'grok provider should exist');
-    assert.ok(typeof grok.installed === 'boolean');
-
-    const codex = detector.getProvider('codex');
-    assert.ok(codex, 'codex provider should exist');
-    assert.ok(typeof codex.installed === 'boolean');
+describe('Detector routing', () => {
+  it('resolves aliases and explicit models', () => {
+    assert.equal(detector.resolveModelTarget('chatgpt').provider.id, 'codex');
+    assert.equal(detector.resolveModelTarget('agy/custom-model').model, 'custom-model');
+    assert.throws(() => detector.resolveModelTarget('unknown-model'), /Unknown model/);
   });
-
-  it('should return OpenAI formatted models list', () => {
-    const models = detector.getAvailableModels();
-    assert.ok(models.length > 0);
-    const model = models[0];
-    assert.equal(model.object, 'model');
-    assert.ok(model.id);
-    assert.ok(model.owned_by);
-  });
-
-  it('should resolve model targets correctly', () => {
-    const resAgy = detector.resolveModelTarget('agy');
-    assert.equal(resAgy.provider.id, 'agy');
-
-    const resGemini = detector.resolveModelTarget('gemini-3.8-flash-high');
-    assert.equal(resGemini.provider.id, 'agy');
-    assert.equal(resGemini.model, 'gemini-3.8-flash-high');
-
-    const resClaude = detector.resolveModelTarget('claude');
-    assert.equal(resClaude.provider.id, 'claude');
-
-    const resGrok = detector.resolveModelTarget('grok');
-    assert.equal(resGrok.provider.id, 'grok');
-
-    const resCodex = detector.resolveModelTarget('codex');
-    assert.equal(resCodex.provider.id, 'codex');
-
-    const resChatgpt = detector.resolveModelTarget('chatgpt');
-    assert.equal(resChatgpt.provider.id, 'codex');
+  it('does not advertise uninstalled providers', () => {
+    const empty = Object.create(detector);
+    empty.providers = new Map([['agy', { ...providers[0], installed: false }]]);
+    assert.deepEqual(empty.getAvailableModels(), []);
+    assert.throws(() => empty.resolveModelTarget('agy'), /not installed/);
   });
 });
 
 describe('HTTP API Server Integration Tests', () => {
-  const TEST_PORT = 8992;
-  const BASE_URL = `http://127.0.0.1:${TEST_PORT}`;
+  let BASE_URL;
   let serverInstance;
 
   before(async () => {
-    serverInstance = new AgiaryServer({ port: TEST_PORT, host: '127.0.0.1' });
+    serverInstance = new AgiaryServer({ port: 0, host: '127.0.0.1', detector: fakeDetector, createAdapter: fakeAdapter });
     await serverInstance.start();
+    BASE_URL = `http://127.0.0.1:${serverInstance.port}`;
   });
 
   after(async () => {
@@ -307,7 +289,49 @@ describe('HTTP API Server Integration Tests', () => {
       method: 'OPTIONS'
     });
     assert.equal(res.status, 204);
-    assert.equal(res.headers.get('access-control-allow-origin'), '*');
+    assert.equal(res.headers.get('access-control-allow-origin'), null);
+    assert.ok(res.headers.get('access-control-allow-methods').includes('DELETE'));
+  });
+
+  it('streams legacy completions with text and a terminator', async () => {
+    const res = await fetch(`${BASE_URL}/v1/completions`, { method: 'POST', body: JSON.stringify({ model: 'agy', prompt: 'Hello', stream: true }) });
+    const text = await res.text();
+    assert.ok(text.includes('"text":"VERIFIED"'));
+    assert.ok(text.includes('data: [DONE]'));
+  });
+
+  it('streams conversation turns and saves the exact assistant text', async () => {
+    const res = await fetch(`${BASE_URL}/v1/conversations/stream-thread/messages`, { method: 'POST', body: JSON.stringify({ model: 'agy', content: 'Hello', stream: true }) });
+    const text = await res.text();
+    assert.ok(text.includes('conversation.message.chunk'));
+    assert.ok(text.includes('data: [DONE]'));
+    assert.equal(getConversation('stream-thread').messages.at(-1).content, 'VERIFIED');
+  });
+
+  it('reports streaming errors without saving partial assistant output', async () => {
+    const res = await fetch(`${BASE_URL}/v1/chat/completions`, { method: 'POST', body: JSON.stringify({ model: 'agy', conversation_id: 'failure-thread', messages: [{ role: 'user', content: 'FAIL' }], stream: true }) });
+    const text = await res.text();
+    assert.ok(text.includes('Fixture provider failure'));
+    assert.ok(!text.includes('"finish_reason":"stop"'));
+    assert.equal(getConversation('failure-thread').messages.length, 1);
+  });
+
+  it('rejects overlapping conversation turns and keeps history ordered', async () => {
+    const request = () => fetch(`${BASE_URL}/v1/conversations/concurrent-thread/messages`, { method: 'POST', body: JSON.stringify({ model: 'agy', content: 'SLOW' }) });
+    const responses = await Promise.all([request(), request()]);
+    assert.deepEqual(responses.map(r => r.status).sort(), [200, 409]);
+    await Promise.all(responses.map(r => r.text()));
+    assert.deepEqual(getConversation('concurrent-thread').messages.map(m => m.role), ['user', 'assistant']);
+    assert.equal((await request()).status, 200);
+  });
+
+  it('invalid model and empty conversation turns do not create history', async () => {
+    const res = await fetch(`${BASE_URL}/v1/conversations/no-history/messages`, { method: 'POST', body: JSON.stringify({ content: 'Hello', model: 'unknown-model' }) });
+    assert.equal(res.status, 404);
+    assert.equal(getConversation('no-history'), null);
+    const empty = await fetch(`${BASE_URL}/v1/conversations/no-history/messages`, { method: 'POST', body: '{}' });
+    assert.equal(empty.status, 400);
+    assert.equal(getConversation('no-history'), null);
   });
 
   describe('Conversations HTTP Endpoints', () => {

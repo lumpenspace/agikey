@@ -822,3 +822,6 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+/* Keep unsupported controls and inactive regions hidden despite layout rules. */
+[hidden] { display: none !important; }

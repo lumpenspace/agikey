@@ -3,10 +3,6 @@ name: Publish to npm
 on:
   release:
     types: [ published ]
-  push:
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,11 +20,11 @@ jobs:
           node-version: 22.x
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Run Tests
-        run: npm test
+      - name: Verify release tag
+        run: node -e "const p=require('./package.json'); if(process.env.GITHUB_REF_NAME !== 'v'+p.version) process.exit(1)"
 
-      - name: Verify Package Contents
-        run: npm pack --dry-run
+      - name: Verify release package
+        run: npm run release:check
 
       - name: Publish to npm
         run: npm publish --provenance --access public

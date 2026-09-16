@@ -1,7 +1,7 @@
 {
   "name": "agikey",
-  "version": "1.0.0",
-  "description": "OpenAI-compatible local API gateway and dashboard for Claude Code, agy, Grok, and Codex/ChatGPT CLIs",
+  "version": "1.0.1",
+  "description": "Local text API gateway and dashboard for agy, Claude Code, Grok and Codex CLIs",
   "main": "src/server.js",
   "bin": {
     "agikey": "./bin/agikey.js",
@@ -12,7 +12,11 @@
     "src",
     "public",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "docs",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md"
   ],
   "type": "module",
   "scripts": {
@@ -27,12 +31,16 @@
     "conversations": "node bin/agikey.js conversations",
     "convs": "node bin/agikey.js conversations",
     "chat": "node bin/agikey.js chat",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:live": "node scripts/smoke-live.js",
+    "release:check": "npm test && node scripts/release-check.js",
+    "site:preview": "node scripts/preview-site.js",
+    "prepublishOnly": "npm run release:check"
   },
   "homepage": "https://agikey.hyperplex.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lumpenspace/agikey"
+    "url": "git+https://github.com/lumpenspace/agikey.git"
   },
   "bugs": {
     "url": "https://github.com/lumpenspace/agikey/issues"

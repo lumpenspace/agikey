@@ -6,6 +6,7 @@
   <title>⚿ Agikey — OpenAI-Compatible Local API Gateway</title>
   <meta name="description" content="Agikey: OpenAI-Compatible Local API Gateway for AI coding CLIs">
   <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2210%22 fill=%22%23264cfa%22/%3E%3Ctext x=%2212%22 y=%2248%22 fill=%22white%22 font-size=%2248%22%3E⚿%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Michroma&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -52,6 +53,12 @@
       </div>
     </header>
 
+    <form id="api-key-form" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0">
+      <label for="dashboard-key">Server API key</label>
+      <input id="dashboard-key" type="password" autocomplete="off" placeholder="Only if configured" class="form-control" style="width:220px">
+      <button type="submit" class="btn secondary">Connect</button>
+      <span id="auth-status" role="status" class="text-muted">Local connection</span>
+    </form>
     <!-- Navigation Tabs -->
     <nav class="nav-tabs">
       <button class="nav-tab active" data-tab="providers">Agent Status</button>
@@ -103,8 +110,8 @@
         <div class="claude-notice-banner" id="claude-notice">
           <div class="notice-icon">💡</div>
           <div class="notice-content">
-            <strong>Claude Desktop vs Claude Code CLI Note:</strong>
-            Claude Desktop authenticates via your consumer subscription (Claude Pro/Max), whereas Claude Code CLI communicates with Anthropic's developer API credits. If your CLI reports <em>"Credit balance is too low"</em>, link your Claude subscription using <code>claude setup-token</code>, or route requests through <strong>agy</strong> which is fully active and includes Gemini and Claude models!
+            <strong>Discovery is not a generation test.</strong>
+            An installed CLI can still fail because of authentication, account credit, model access, or version requirements. Check the active account in the provider CLI, then send a small test prompt. Agikey forwards provider errors to the caller.
           </div>
         </div>
       </section>
@@ -426,7 +433,7 @@ agikey chat -c conv-12345678 "Continue debugging"</code></pre>
 
     <!-- Footer -->
     <footer class="app-footer">
-      <span>Agikey v1.0.0 &bull; Local OpenAI Compatible Bridge</span>
+      <span>Agikey v1.0.1 &bull; Local OpenAI Compatible Bridge</span>
       <span>Supports <strong>agy</strong>, <strong>Claude Code</strong>, <strong>Grok</strong>, and <strong>Codex / ChatGPT</strong></span>
     </footer>
   </div>

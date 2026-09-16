@@ -13,6 +13,7 @@ import {
   formatTextChunk,
   formatTextResponse,
 } from './utils/sse.js';
+import { validateBody } from './utils/validation.js';
 import { logger } from './utils/logger.js';
 
 import {
@@ -30,12 +31,27 @@ const PUBLIC_DIR = path.resolve(__dirname, '../public');
 
 export class AgiaryServer {
   constructor(options = {}) {
-    this.port = options.port || process.env.PORT || 8000;
+    this.port = options.port ?? Number(process.env.PORT || 8000);
     this.host = options.host || process.env.HOST || '127.0.0.1';
-    this.apiKey = options.apiKey || process.env.AGIARY_API_KEY || null;
+    this.apiKey = options.apiKey ?? process.env.AGIKEY_API_KEY ?? process.env.AGIARY_API_KEY ?? null;
+    this.detector = options.detector || detector;
+    this.createAdapter = options.createAdapter || createAdapter;
     this.server = null;
     this.requestHistory = [];
+    this.activeConversations = new Set();
     this.MAX_HISTORY = 100;
+  }
+
+  acquireConversation(id, res) {
+    if (this.activeConversations.has(id)) {
+      this.sendError(res, 409, 'Conversation already has a running turn', 'conflict');
+      return false;
+    }
+    this.activeConversations.add(id);
+    const release = () => this.activeConversations.delete(id);
+    res.once('finish', release);
+    res.once('close', release);
+    return true;
   }
 
   logRequest(reqInfo) {
@@ -57,8 +73,8 @@ export class AgiaryServer {
   }
 
   setCorsHeaders(res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS, HEAD');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   }
 
@@ -92,17 +108,22 @@ export class AgiaryServer {
     return new Promise((resolve, reject) => {
       let body = '';
       req.on('data', chunk => {
+        if (body === null) return;
         body += chunk;
-        if (body.length > 20 * 1024 * 1024) { // 20 MB limit
-          reject(new Error('Request payload too large'));
+        if (Buffer.byteLength(body) > 1024 * 1024) { // 20 MB limit
+          body = null;
+          reject(Object.assign(new Error('Request payload too large (1 MiB limit)'), { statusCode: 413 }));
         }
       });
       req.on('end', () => {
+        if (body === null) return;
         if (!body) return resolve({});
         try {
-          resolve(JSON.parse(body));
+          const value = JSON.parse(body);
+          validateBody(value);
+          resolve(value);
         } catch (err) {
-          reject(new Error(`Invalid JSON body: ${err.message}`));
+          reject(err.statusCode ? err : new Error(`Invalid JSON body: ${err.message}`));
         }
       });
       req.on('error', reject);
@@ -132,12 +153,20 @@ export class AgiaryServer {
   async handleRequest(req, res) {
     this.setCorsHeaders(res);
 
+    if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}`) {
+      return this.sendError(res, 403, 'Cross-origin browser requests are disabled', 'forbidden');
+    }
+
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
       res.end();
       return;
     }
 
+    if (['127.0.0.1', 'localhost', '::1'].includes(this.host)) {
+      const requestHost = new URL(`http://${req.headers.host || 'localhost'}`).hostname;
+      if (!['127.0.0.1', 'localhost', '[::1]'].includes(requestHost)) return this.sendError(res, 403, 'Unrecognized Host header', 'forbidden');
+    }
     const startTime = Date.now();
     const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const pathname = parsedUrl.pathname;
@@ -162,27 +191,32 @@ export class AgiaryServer {
       return this.sendJson(res, 200, {
         status: 'ok',
         uptime: Math.floor(process.uptime()),
-        version: '1.0.0',
+        version: '1.0.1',
         timestamp: new Date().toISOString(),
       });
+    }
+
+    // Protect management endpoints as well as completions and conversations.
+    if ((pathname.startsWith('/v1/') || pathname.startsWith('/api/')) && !this.checkAuth(req)) {
+      return this.sendError(res, 401, 'Incorrect or missing API key', 'unauthorized', 'invalid_api_key');
     }
 
     // Status endpoint (all providers info)
     if (req.method === 'GET' && (pathname === '/api/status' || pathname === '/v1/status')) {
       return this.sendJson(res, 200, {
-        providers: detector.getAllProviders(),
-        modelsCount: detector.getAvailableModels().length,
+        providers: this.detector.getAllProviders(),
+        modelsCount: this.detector.getAvailableModels().length,
         timestamp: new Date().toISOString(),
       });
     }
 
     // Force re-scan of CLI providers
     if (req.method === 'POST' && pathname === '/api/check') {
-      const providers = await detector.refresh();
+      const providers = await this.detector.refresh();
       return this.sendJson(res, 200, {
         status: 'ok',
         providers,
-        modelsCount: detector.getAvailableModels().length,
+        modelsCount: this.detector.getAvailableModels().length,
       });
     }
 
@@ -207,6 +241,7 @@ export class AgiaryServer {
     if (req.method === 'GET' && (pathname === '/v1/conversations' || pathname === '/api/v1/conversations')) {
       const limit = parseInt(parsedUrl.searchParams.get('limit') || '50', 10);
       const offset = parseInt(parsedUrl.searchParams.get('offset') || '0', 10);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 1000 || !Number.isInteger(offset) || offset < 0) return this.sendError(res, 400, 'Invalid pagination', 'invalid_request_error');
       return this.sendJson(res, 200, listConversations({ limit, offset }));
     }
 
@@ -215,7 +250,9 @@ export class AgiaryServer {
       let body = {};
       try {
         body = await this.parseBody(req);
-      } catch {}
+      } catch (err) {
+        return this.sendError(res, err.statusCode || 400, err.message, 'invalid_request_error');
+      }
       const conv = createConversation(body);
       return this.sendJson(res, 201, conv);
     }
@@ -244,42 +281,35 @@ export class AgiaryServer {
         try {
           body = await this.parseBody(req);
         } catch (err) {
-          return this.sendError(res, 400, err.message, 'invalid_request_error');
+          return this.sendError(res, err.statusCode || 400, err.message, 'invalid_request_error');
         }
 
-        let conv = getConversation(convId);
-        if (!conv) {
-          conv = createConversation({ id: convId, model: body.model || 'agy' });
+        const userContent = body.content || body.message?.content || body.messages?.at(-1)?.content;
+        if (typeof userContent !== 'string' || !userContent.trim()) {
+          return this.sendError(res, 400, "Missing text 'content' or 'messages'.", 'invalid_request_error');
         }
-
-        const userContent = body.content || (body.message && body.message.content) || (Array.isArray(body.messages) && body.messages[body.messages.length - 1]?.content);
-        if (!userContent) {
-          return this.sendError(res, 400, "Missing required parameter 'content' or 'messages'.", 'invalid_request_error');
-        }
-
-        const userRole = body.role || 'user';
-        addMessageToConversation(convId, { role: userRole, content: userContent });
-
-        const updatedConv = getConversation(convId);
-        const targetModelId = body.model || updatedConv.model || 'agy';
-
+        const existing = getConversation(convId);
+        const targetModelId = body.model || existing?.model || 'auto';
         let resolvedTarget;
         try {
-          resolvedTarget = detector.resolveModelTarget(targetModelId);
+          resolvedTarget = this.detector.resolveModelTarget(targetModelId);
         } catch (err) {
           return this.sendError(res, 404, err.message, 'model_not_found');
         }
-
         const { provider, model: targetModel } = resolvedTarget;
+        if (!this.acquireConversation(convId, res)) return;
+        if (!existing) createConversation({ id: convId, model: targetModelId });
+        addMessageToConversation(convId, { role: 'user', content: userContent });
+        const updatedConv = getConversation(convId);
         const completionId = createCompletionId('convmsg');
         const responseModel = targetModelId;
         const stream = Boolean(body.stream);
 
         logger.info(`ConversationMessage [${stream ? 'STREAM' : 'SYNC'}]: conv=${convId} provider=${provider.id} model=${targetModel}`);
 
-        const adapter = createAdapter(provider);
+        const adapter = this.createAdapter(provider);
         const abortController = new AbortController();
-        req.on('close', () => {
+        res.on('close', () => {
           if (!res.writableEnded) abortController.abort();
         });
 
@@ -308,6 +338,7 @@ export class AgiaryServer {
               temperature: body.temperature,
               maxTokens: body.max_tokens,
               reasoningEffort: body.reasoning_effort,
+              responseFormat: body.response_format,
               signal: abortController.signal,
               onDelta: delta => {
                 accumulated += delta;
@@ -350,6 +381,7 @@ export class AgiaryServer {
               temperature: body.temperature,
               maxTokens: body.max_tokens,
               reasoningEffort: body.reasoning_effort,
+              responseFormat: body.response_format,
               signal: abortController.signal,
             });
 
@@ -389,12 +421,16 @@ export class AgiaryServer {
         return this.sendJson(res, 200, conv);
       }
 
+      if (req.method !== 'GET' && this.activeConversations.has(convId)) return this.sendError(res, 409, 'Conversation has a running turn', 'conflict');
+
       // PATCH or POST /v1/conversations/:id (Update conversation)
       if (req.method === 'PATCH' || req.method === 'POST') {
         let body = {};
         try {
           body = await this.parseBody(req);
-        } catch {}
+        } catch (err) {
+          return this.sendError(res, err.statusCode || 400, err.message, 'invalid_request_error');
+        }
         const conv = updateConversation(convId, body);
         if (!conv) {
           return this.sendError(res, 404, `Conversation '${convId}' not found`, 'invalid_request_error', 'conversation_not_found');
@@ -414,7 +450,7 @@ export class AgiaryServer {
 
     // GET /v1/models
     if (req.method === 'GET' && pathname === '/v1/models') {
-      const models = detector.getAvailableModels();
+      const models = this.detector.getAvailableModels();
       return this.sendJson(res, 200, {
         object: 'list',
         data: models,
@@ -424,7 +460,7 @@ export class AgiaryServer {
     // GET /v1/models/:model
     if (req.method === 'GET' && pathname.startsWith('/v1/models/')) {
       const modelId = decodeURIComponent(pathname.slice('/v1/models/'.length));
-      const models = detector.getAvailableModels();
+      const models = this.detector.getAvailableModels();
       const found = models.find(m => m.id === modelId);
       if (!found) {
         return this.sendError(res, 404, `Model '${modelId}' not found`, 'invalid_request_error', 'model_not_found');
@@ -438,7 +474,7 @@ export class AgiaryServer {
       try {
         body = await this.parseBody(req);
       } catch (err) {
-        return this.sendError(res, 400, err.message, 'invalid_request_error');
+        return this.sendError(res, err.statusCode || 400, err.message, 'invalid_request_error');
       }
 
       const {
@@ -457,11 +493,21 @@ export class AgiaryServer {
         return this.sendError(res, 400, "Missing required parameter 'messages'. Must be a non-empty array.", 'invalid_request_error');
       }
 
+      let resolvedTarget;
+      try {
+        resolvedTarget = this.detector.resolveModelTarget(model || (conversation_id && getConversation(conversation_id)?.model));
+      } catch (err) {
+        return this.sendError(res, 404, err.message, 'model_not_found');
+      }
+
+      const { provider, model: targetModel } = resolvedTarget;
+
       let effectiveMessages = messages;
       if (conversation_id) {
+        if (!this.acquireConversation(conversation_id, res)) return;
         let existingConv = getConversation(conversation_id);
         if (!existingConv) {
-          existingConv = createConversation({ id: conversation_id, model: model || 'agy' });
+          existingConv = createConversation({ id: conversation_id, model: model || provider.id });
         }
         for (const m of messages) {
           addMessageToConversation(conversation_id, m);
@@ -472,22 +518,14 @@ export class AgiaryServer {
         }
       }
 
-      let resolvedTarget;
-      try {
-        resolvedTarget = detector.resolveModelTarget(model);
-      } catch (err) {
-        return this.sendError(res, 404, err.message, 'model_not_found');
-      }
-
-      const { provider, model: targetModel } = resolvedTarget;
       const completionId = createCompletionId('chatcmpl');
       const responseModel = model || `${provider.id}/${targetModel}`;
 
       logger.info(`ChatCompletion [${stream ? 'STREAM' : 'SYNC'}]: provider=${provider.id} model=${targetModel} messages=${effectiveMessages.length}${conversation_id ? ` conv=${conversation_id}` : ''}`);
 
-      const adapter = createAdapter(provider);
+      const adapter = this.createAdapter(provider);
       const abortController = new AbortController();
-      req.on('close', () => {
+      res.on('close', () => {
         if (!res.writableEnded) {
           abortController.abort();
         }
@@ -656,7 +694,7 @@ export class AgiaryServer {
       try {
         body = await this.parseBody(req);
       } catch (err) {
-        return this.sendError(res, 400, err.message, 'invalid_request_error');
+        return this.sendError(res, err.statusCode || 400, err.message, 'invalid_request_error');
       }
 
       const {
@@ -673,7 +711,7 @@ export class AgiaryServer {
 
       let resolvedTarget;
       try {
-        resolvedTarget = detector.resolveModelTarget(model);
+        resolvedTarget = this.detector.resolveModelTarget(model);
       } catch (err) {
         return this.sendError(res, 404, err.message, 'model_not_found');
       }
@@ -684,9 +722,9 @@ export class AgiaryServer {
 
       logger.info(`TextCompletion [${stream ? 'STREAM' : 'SYNC'}]: provider=${provider.id} model=${targetModel}`);
 
-      const adapter = createAdapter(provider);
+      const adapter = this.createAdapter(provider);
       const abortController = new AbortController();
-      req.on('close', () => {
+      res.on('close', () => {
         if (!res.writableEnded) abortController.abort();
       });
 
@@ -706,6 +744,8 @@ export class AgiaryServer {
             model: targetModel,
             temperature,
             maxTokens: max_tokens,
+            reasoningEffort: body.reasoning_effort,
+            responseFormat: body.response_format,
             signal: abortController.signal,
             onDelta: delta => {
               writeSSEChunk(res, formatTextChunk({
@@ -753,6 +793,8 @@ export class AgiaryServer {
           model: targetModel,
           temperature,
           maxTokens: max_tokens,
+          reasoningEffort: body.reasoning_effort,
+          responseFormat: body.response_format,
           signal: abortController.signal,
         });
 
@@ -787,14 +829,17 @@ export class AgiaryServer {
   }
 
   async start() {
-    await detector.refresh();
+    if (!['127.0.0.1', 'localhost', '::1'].includes(this.host) && !this.apiKey) {
+      throw new Error('Binding beyond loopback requires AGIKEY_API_KEY or --key');
+    }
+    await this.detector.init();
 
     return new Promise((resolve, reject) => {
       this.server = http.createServer((req, res) => {
         this.handleRequest(req, res).catch(err => {
           logger.error('Unhandled request exception:', err);
           if (!res.headersSent) {
-            this.sendError(res, 500, `Internal Server Error: ${err.message}`);
+            this.sendError(res, err.statusCode || 500, err.message, err.statusCode ? 'invalid_request_error' : 'api_error');
           }
         });
       });
@@ -802,6 +847,7 @@ export class AgiaryServer {
       this.server.on('error', reject);
 
       this.server.listen(this.port, this.host, () => {
+        this.port = this.server.address().port;
         logger.info(`========================================================`);
         logger.info(`🚀 Agikey (Agiary) OpenAI API Gateway running at:`);
         logger.info(`   Local API Base URL : http://${this.host}:${this.port}/v1`);
@@ -823,3 +869,5 @@ export class AgiaryServer {
     });
   }
 }
+
+export { AgiaryServer as AgikeyServer };
