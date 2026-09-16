@@ -20,7 +20,35 @@
     <meta property="og:type" content="website" />
     <meta
       property="og:image"
-      content="https://agikey.hyperplex.org/assets/social.svg"
+      content="https://agikey.hyperplex.org/assets/social.png"
+    />
+    <link rel="canonical" href="https://agikey.hyperplex.org/" />
+    <meta property="og:url" content="https://agikey.hyperplex.org/" />
+    <meta property="og:site_name" content="Agikey" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Agikey — An API from your AI subscriptions. Codex, Claude Code, Grok, agy."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Agikey — An API from your AI subscriptions."
+    />
+    <meta
+      name="twitter:description"
+      content="Create an OpenAI-compatible API connected to Codex, Claude Code, Grok, agy, and more."
+    />
+    <meta
+      name="twitter:image"
+      content="https://agikey.hyperplex.org/assets/social.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Agikey — An API from your AI subscriptions. Codex, Claude Code, Grok, agy."
     />
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="style.css" />
@@ -284,20 +312,26 @@ print(response.choices[0].message.content)</code></pre>
         </div>
         <div class="install-panel">
           <div class="install-heading">
-            <strong>Run from source</strong
-            ><span class="small-tag">PRE-RELEASE</span>
+            <strong>Install from npm</strong
+            ><a
+              class="small-tag"
+              href="https://www.npmjs.com/package/agikey"
+              aria-label="Agikey version 1.0.1 on npm"
+              >v1.0.1 ↗</a
+            >
           </div>
-          <pre><code id="install-command">git clone https://github.com/lumpenspace/agikey.git
-cd agikey
-npm link
+          <pre><code id="install-command">npm install -g agikey
 agikey discover
 agikey serve</code></pre>
           <button class="button install-copy" id="copy-install">
             Copy commands <span>↗</span>
           </button>
           <p>
-            The npm package is prepared as <code>agikey</code>, with
-            <code>agiary</code> as an alias. Public npm publication is pending.
+            The
+            <a class="text-link" href="https://www.npmjs.com/package/agikey"
+              >agikey package on npm ↗</a
+            >
+            installs the <code>agikey</code> command.
           </p>
         </div>
       </section>

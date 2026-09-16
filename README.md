@@ -1,8 +1,8 @@
 # Agikey
 
-**Your agents. One local API.**
+**An API from your AI subscriptions.**
 
-Agikey (formerly Agiary) is a local HTTP gateway for **agy, Claude Code, Grok, and Codex**. It exposes a subset of OpenAI's text chat/completions interface and includes a dashboard for discovery, prompts, and saved conversations. It uses native Node.js modules with **zero runtime dependencies**.
+Agikey is a local HTTP gateway for **agy, Claude Code, Grok, and Codex**. It exposes a subset of OpenAI's text chat/completions interface and includes a dashboard for discovery, prompts, and saved conversations. It uses native Node.js modules with **zero runtime dependencies**.
 
 The gateway runs locally; provider CLIs still contact their own services. An installed CLI and working provider authentication are prerequisites. Discovery is not proof that generation works.
 
@@ -10,17 +10,21 @@ The gateway runs locally; provider CLIs still contact their own services. An ins
 
 Requires Node.js 18 or later and macOS or Linux. Use a maintained Node.js release. Windows has not been validated.
 
-**Publication status:** `agikey` and `agiary` returned 404 from the public npm registry on September 16, 2026. This repository prepares the package `agikey@1.0.1`; it is not published yet. Both `agikey` and `agiary` commands are included in that single package.
+Install [Agikey from npm](https://www.npmjs.com/package/agikey):
 
-Until publication, install from source:
+```sh
+npm install -g agikey
+agikey discover
+agikey serve
+```
+
+To develop from source:
 
 ```sh
 git clone https://github.com/lumpenspace/agikey.git
 cd agikey
 npm test
 npm link
-agikey discover
-agikey serve
 ```
 
 Open **http://127.0.0.1:8000** for the local dashboard. The API base is **http://127.0.0.1:8000/v1**. `node bin/agikey.js` also works without linking.
@@ -121,7 +125,7 @@ agikey --help                   Show command help
 | --- | --- |
 | `--port`, `-p` / `PORT` | `8000` |
 | `--host` / `HOST` | `127.0.0.1` (`-h` means help) |
-| `--key`, `-k` / `AGIKEY_API_KEY` | No key on loopback; legacy `AGIARY_API_KEY` also accepted |
+| `--key`, `-k` / `AGIKEY_API_KEY` | No key on loopback |
 | `AGIKEY_HOME` | `~/.agikey` (cache and conversations) |
 | `--json` | JSON output for discover/check/conversations |
 | `--debug` | Diagnostic logging |

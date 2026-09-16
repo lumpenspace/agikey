@@ -2,16 +2,16 @@
 
 ## Decision
 
-**Prepared as v1.0.1 for release review; npm publication is still pending.** The code, package and website have been improved and tested. A four-provider live-verified launch is still gated by account/CLI issues below. These are not hidden behind passing fixture tests.
+**Agikey 1.0.1 is published on npm, and the website is live at https://agikey.hyperplex.org.** The code, package and website have been improved and tested. A four-provider live-verified launch is still gated by account/CLI issues below. These are not hidden behind passing fixture tests.
 
-The source repository is public at https://github.com/lumpenspace/agikey. Public npm registry lookups for both `agikey` and `agiary` returned E404. The manifest prepares `agikey@1.0.1` with both command aliases. No npm credentials or publication permissions were checked.
+The source repository is public at https://github.com/lumpenspace/agikey. The public npm registry confirms `agikey@1.0.1`, and `npm exec --yes --package=agikey@1.0.1 -- agikey --help` succeeded outside the repository after publication.
 
 ## Verification performed
 
 - 72 isolated tests covering request/response shapes, chat/text/conversation SSE, conversation CRUD and history, concurrent-turn rejection, management authentication, hostile origins/Host headers, body limits, validation, duplicate creation, provider event parsing, partial failures, cancellation and timeout.
 - All 72 tests passed on Node 18, 20, 22 and 24 locally. No skipped or cancelled tests in any run.
 - Official JavaScript `openai@7.15.0` SDK smoke: model list, JSON chat, streamed chat, legacy completions and HTTP error handling against a local server with a fixture CLI. This checks the SDK wire format, not provider access. Python snippets have not been executed.
-- Tarball contents audited against an explicit allowlist; clean temporary global install; both `agikey --help` and `agiary --help`; JSON conversations output from isolated storage.
+- Tarball contents audited against an explicit allowlist; clean temporary global install; `agikey --help`; JSON conversations output from isolated storage.
 - Website inspected at 1440px desktop and 390px mobile: no mobile page overflow; provider selection updates code and diagram; language tabs and keyboard arrows work; clipboard and screenshot controls work; reduced-motion preference disables routing animation; no website console errors.
 - Dashboard tested against an authenticated fixture server: key entry, provider discovery, streaming conversation, and visible provider-error handling. Its initial HTTP 401 responses before key entry are expected.
 - Repository `git diff --check` and JavaScript syntax checks.
@@ -36,8 +36,8 @@ No provider account, billing setup, installed CLI version or global model config
 1. Resolve Claude billing/authentication, Grok login, and Codex CLI/model compatibility, then rerun `npm run test:live`; or explicitly scope launch claims to agy. Do not describe all four providers as live verified.
 2. Live-test structured output and reasoning flags if those are to be advertised as verified. Current coverage establishes flag wiring/parser behavior and documents provider dependence.
 3. Review the prepared diff and check remote CI for the pushed version. Local matrix results are not remote CI evidence.
-4. Configure/confirm npm ownership and publishing credentials. Publish using the documented release procedure, then verify registry metadata and a fresh `npx` install.
-5. Update npm publication wording after registry confirmation; deploy `website/` to the existing Vercel project and check the production result.
+4. Completed: npm publication, registry metadata verification, and published CLI smoke check.
+5. Completed: Vercel production deployment `dpl_ANabuEtFzpNHV9hcgf3qsHTcMJdv`; the production HTML matches the local source. Verified npm command/link, Open Graph and Twitter card tags, the 1200×630 PNG preview, and HTTP 200 asset responses on https://agikey.hyperplex.org.
 
 ## Intentional scope limits
 

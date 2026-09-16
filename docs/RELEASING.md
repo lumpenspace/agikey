@@ -1,10 +1,10 @@
 # Release procedure
 
-Package: `agikey`; executable aliases: `agikey`, `agiary`; prepared version: `1.0.1`.
+Package: `agikey`; command: `agikey`; prepared version: `1.0.1`.
 
 ## Before publication
 
-1. Run `npm run release:check`. It runs isolated tests, packs the allowlisted runtime files, rejects unexpected archive entries, installs into a temporary prefix, and checks both commands.
+1. Run `npm run release:check`. It runs isolated tests, packs the allowlisted runtime files, rejects unexpected archive entries, installs into a temporary prefix, and checks the packaged CLI.
 2. Run `npm run test:live`. Resolve provider environment failures or explicitly scope the release to the providers actually verified. Run additional live schema/reasoning checks before claiming those options are verified.
 3. Review `docs/LAUNCH.md`, README compatibility limits and the website copy together. Discovery and fixtures alone do not establish provider functionality.
 4. Inspect `npm pack --dry-run` for accidental credentials or local data. Confirm the package name/owner and homepage/repository visibility.
